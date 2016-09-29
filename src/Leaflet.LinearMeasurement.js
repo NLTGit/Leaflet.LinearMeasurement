@@ -1,6 +1,6 @@
 (function(){
 
-  L.Control.BasicRuler = L.Control.extend({
+  L.Control.LinearMeasurement = L.Control.extend({
 
       options: {
           position: 'topleft',
