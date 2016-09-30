@@ -513,7 +513,7 @@
               total: this.measure,
               total_label: total_label,
               unit: this.UNIT_CONV,
-              sub_unit: this.SUB_UNIT
+              sub_unit: this.SUB_UNIT_CONV
           };
 
           var fireSelected = function(e){

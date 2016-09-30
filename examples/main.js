@@ -19,9 +19,23 @@ var cost_underground = 12.55,
 var Ruler = L.Control.LinearMeasurement.extend({
     layerSelected: function(e){
 
+        /* cost should be in feet */
+
+        var distance = e.total.scalar;
+
+        if(e.total.unit === 'mi'){
+            distance *= e.sub_unit;
+
+        } else if(e.total.unit === 'km'){
+            distance *= 3280.84;
+
+        } else if(e.total.unit === 'm'){
+            distance *= 3.28084;
+        }
+
         var data = {
-          total_above_ground: numberWithCommas(L.Util.formatNum(cost_above_ground * e.total * 1000, 2)),
-          total_underground: numberWithCommas(L.Util.formatNum(cost_underground * e.total * 1000, 2))
+            total_above_ground: numberWithCommas(L.Util.formatNum(cost_above_ground * distance, 2)),
+            total_underground: numberWithCommas(L.Util.formatNum(cost_underground * distance, 2))
         };
 
         var content = L.Util.template(html, data),
@@ -29,7 +43,6 @@ var Ruler = L.Control.LinearMeasurement.extend({
 
         e.total_label.bindPopup(popup, { offset: [45, 0] });
         e.total_label.openPopup();
-
     }
 });
 
