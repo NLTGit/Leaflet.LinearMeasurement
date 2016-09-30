@@ -138,6 +138,7 @@
           this.fixedLast = 0;
           this.totalIcon = null;
           this.total = null;
+          this.lastCircle = null;
 
           /* Leaflet return distances in meters */
           this.UNIT_CONV = 1000;
@@ -488,6 +489,8 @@
               return;
           }
 
+          this.cleanUpLastNodes();
+          
           this.layer.off('click');
           this.layer.off('dblclick');
 
@@ -528,6 +531,26 @@
           workspace.fireEvent('selected', data);
 
           this.resetRuler(false);
+      },
+
+      cleanUpLastNodes: function(){
+          var dots = [];
+
+          this.layer.eachLayer(function(l, i){
+              if(l.options.type === 'dot'){
+                  dots.push(l);
+              }
+          });
+
+          this.purgeLayers(dots.splice(-4));
+      },
+
+      purgeLayers: function(layers){
+          for(var i in layers){
+              if(layers[i]) {
+                this.layer.removeLayer(layers[i]);
+              }
+          }
       },
 
       layerSelected: function(e){}
