@@ -17,5 +17,5 @@
 See <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>
 
 <div style="padding: 20px 20px;">
-  <img src="examples/linear-measurement.png" />
+  <img src="examples/dc.png" />
 </div>
