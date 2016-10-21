@@ -16,10 +16,16 @@ var cost_underground = 12.55,
         return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     };
 
-var Ruler = L.Control.LinearMeasurement.extend({
-    layerSelected: function(e){
+/*var Core = L.Control.LinearMeasurement.extend({});
 
-        /* cost should be in feet */
+map.addControl(new Core({
+  color: '#FF0080',
+  type: 'polygon'
+}));*/
+
+
+var Core = L.Control.LinearMeasurement.extend({
+    onSelect: function(e){
 
         var distance = e.total.scalar;
 
@@ -46,7 +52,8 @@ var Ruler = L.Control.LinearMeasurement.extend({
     }
 });
 
-map.addControl(new Ruler({
-  unitSystem: 'metric',
-  color: '#FF0080'
+map.addControl(new Core({
+  unitSystem: 'imperial',
+  color: '#FF0080',
+  type: 'line'
 }));
