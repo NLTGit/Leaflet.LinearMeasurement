@@ -18,6 +18,10 @@
 
 See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
 
+<div style="padding: 20px 20px;">
+  <img src="examples/dc.png" />
+</div>
+
 <h2>Usage</h2>
 
 <h2>Requirements</h2>
@@ -25,6 +29,4 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
 <h2>Author</h2>
 Juan Daniel Flores
 
-<div style="padding: 20px 20px;">
-  <img src="examples/dc.png" />
-</div>
+
