@@ -14,7 +14,11 @@
 
 </ul>
 
-See <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>
+<h2>Demo</h2>
+
+See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
+
+<h2>Usage</h2>
 
 <div style="padding: 20px 20px;">
   <img src="examples/dc.png" />
