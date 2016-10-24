@@ -152,7 +152,7 @@
           this.layer.addTo(this.mainLayer);
           this.layer.on('selected', this.onSelect);
 
-          this.layer.on('click', this.getMouseClickHandler, this);
+          //this.layer.on('click', this.getMouseClickHandler, this);
           this._map.on('mousemove', this.getMouseMoveHandler, this);
       },
 
@@ -201,11 +201,17 @@
           this.nodes = [];
       },
 
-      renderCircle: function(latLng, radius, layer, type, label) {
+      renderCircle: function(latLng, radius, layer, type, label, skipLabel) {
           var color = this.options.color,
-              lineColor = this.options.color;
+              lineColor = this.options.color,
+              r = 3;
 
           type = type || 'circle';
+
+          if(type != 'node'){
+              r = 1;
+              lineColor = 'blue';
+          }
 
           linesHTML = [];
 
@@ -218,11 +224,13 @@
               label: label
           };
 
-          this.onRenderNode(latLng, options);
+          if(!skipLabel){
+              this.onRenderNode(latLng, options, layer);
+          }
 
           var circle = L.circleMarker(latLng, options);
 
-          circle.setRadius(3);
+          circle.setRadius(r);
           circle.addTo(layer);
 
           return circle;
@@ -293,19 +301,24 @@
 
           L.DomEvent.stop(e);
 
-          if(me.nodedragEnable || me.dragEnable || me.rotateEnable){
+          if(!me.nodeEnable && !me.lineEnable && !me.polygonEnable){
               return;
           }
 
-          if(this.pid){
+          var isNode = this.options.type === 'node';
+
+          if(this.pid || isNode){
 
               clearTimeout(this.pid);
 
+              if(isNode){
+                  me.initLayer();
+              }
+
               if(this.layer){
-                  if(!this.multi){
+                  if(!this.multi && !isNode){
                       this.multi = me.renderMultiPolyline(me.nodes, '5 5', me.layer, 'dot');
                   }
-                  this.renderCircle(e.latlng, 0, this.layer, 'dot', '');
                   this.getMouseDblClickHandler(e);
               }
 
@@ -321,19 +334,18 @@
                       return;
                   }
 
-                  if(!me.layer || me.options.type === 'node'){
+                  if(!me.layer){
                       me.initLayer();
                   }
 
                   me.doRenderNode(e);
 
                   me._map.on('mousemove', me.getMouseMoveHandler, me);
-
               }, 200);
           }
       },
 
-      doRenderNode: function(e, skipNode){
+      doRenderNode: function(e, skipLabel){
           var latlng = e.latlng,
               me = this;
 
@@ -357,9 +369,7 @@
               }
           }
 
-          if(!skipNode){
-              me.renderCircle(latlng, 0, me.layer, 'node', '');
-          }
+          me.renderCircle(latlng, 0, me.layer, 'node', '', true);
       },
 
       getMouseMoveHandler: function(e){
@@ -409,126 +419,153 @@
               i = null,
               total = this.total,
               nodes = this.nodes,
-              onodes = [];
+              onodes = [],
+              pos;
 
           onodes = me.fillOnodes(layer);
           me.zeroNodes(nodes, onodes);
 
-          m.on('mousedown', function(e){
+          layer.on('mousedown', function(e){
               if(!me.dragging && me.dragEnable){
                   me._map.dragging.disable();
-                  m.drag = true;
+                  layer.drag = true;
                   me.dragging = true;
                   i = e.latlng;
+                  pos = this._map.latLngToContainerPoint(i);
               }
           });
 
           map.on('mousemove', function(e){
-              if(me.dragging && me.dragEnable && m.drag){
+              if(layer.drag){
                   d = e.latlng;
 
                   for(var o in onodes){
-                      me.setNodePosition(onodes[o], i, d);
+                      me.setNodePosition(onodes[o], pos, d);
                   }
 
                   if(total){
                     total.setLatLng(nodes[nodes.length-1]);
                   }
 
-                  m.setLatLngs(nodes);
+                  if(m){
+                    m.setLatLngs(nodes);
+                  }
               }
-          });
+          }, layer);
 
           map.on('mouseup', function(e){
-              if(me.dragging && me.dragEnable && m.drag){
-                m.drag = false;
+              if(layer.drag){
+                layer.drag = false;
                 me._map.dragging.enable();
                 me.dragging = false;
+                i = e.latlng;
                 me.zeroNodes(nodes, onodes);
               }
-          });
+          }, layer);
 
           this.enableShapeNodeDrag(layer);
       },
 
+
+      getNearings: function(d, margin){
+          var nearings = [],
+              main = this.mainLayer;
+
+          main.eachLayer(function(l){
+              l.eachLayer(function(m){
+                  if(m._latlng && m.getLatLng().equals(d, margin)){
+                      nearings.push(m);
+                  }
+              });
+          });
+
+          return nearings;
+      },
+
       enableShapeNodeDrag: function(layer){
           var me = this,
-              multi = me.multi,
               map = this._map,
               nodes = this.nodes,
+              multi = this.multi,
               total = this.total,
+              main = this.mainLayer,
+              nearings = [],
               onodes = [];
 
-          layer.eachLayer(function(m){
-              var original = m.getLatLng ? m.getLatLng() : null,
-                  node, pos_i, dxi, dyi,
-                  centroid = null,
-                  i = null;
+          if(!multi){
+              return;
+          }
 
-              for(var j in nodes){
-                  if(nodes[j].equals(original)){
-                      m.i = j;
-                      nodes[j].node = m;
-                      node = nodes[j];
-                      break;
+          onodes = me.fillOnodes(layer);
+          me.zeroNodes(nodes, onodes);
+
+          var centroid, pos_i, dxi, dyi, i;
+
+          layer.on('mousedown', function(e){
+              if(me.rotateEnable || me.nodedragEnable){
+                  map.dragging.disable();
+                  me.dragging = true;
+                  centroid = map.latLngToContainerPoint(multi.getCenter());
+
+                  i = e.latlng;
+
+                  pos_i = map.latLngToContainerPoint(i);
+                  dxi = pos_i.x - centroid.x;
+                  dyi = pos_i.y - centroid.y;
+
+                  layer.nodedrag = true;
+              }
+          });
+
+          map.on('mousemove', function(e){
+              if(layer.nodedrag){
+                  var d = e.latlng,
+                      delta = 0;
+
+                  if(me.nodedragEnable){
+                      nearings = me.getNearings(d, 0.005);
+
+                      for(var r in nearings){
+                        nearings[r].setLatLng(d);
+                      }
+
+                      var latlngs = multi.getLatLngs();
+
+                      for(var ll in latlngs){
+                          if(latlngs[ll].equals(d, 0.005)){
+                             latlngs[ll].lat = d.lat;
+                             latlngs[ll].lng = d.lng;
+                          }
+                      }
+
+                      multi.setLatLngs(nodes);
+
+                      me.onRedraw(layer, multi);
+
+                  } else if(me.rotateEnable){
+                      delta = me.getRotationAngleDelta(d, i, centroid, dxi, dyi);
+
+                      for(var o in onodes){
+                          me.rotateNode(onodes[o], centroid, delta);
+                      }
+
+                      if(total){
+                        total.setLatLng(nodes[nodes.length-1]);
+                      }
+
+                      multi.setLatLngs(nodes);
                   }
               }
+          });
 
-              onodes = me.fillOnodes(layer);
-              me.zeroNodes(nodes, onodes);
-
-              m.on('mousedown', function(e){
-                  if(me.rotateEnable || me.nodedragEnable){
-                      map.dragging.disable();
-                      me.dragging = true;
-                      centroid = me._map.latLngToContainerPoint(multi.getCenter());
-
-                      i = e.latlng;
-
-                      pos_i = map.latLngToContainerPoint(i);
-                      dxi = pos_i.x - centroid.x;
-                      dyi = pos_i.y - centroid.y;
-
-                      m.nodedrag = true;
-                  }
-              });
-
-              map.on('mousemove', function(e){
-                  if(m.nodedrag){
-                      var d = e.latlng,
-                          delta = 0;
-
-                      if(me.nodedragEnable){
-                          /*m.setLatLng(d);
-                          nodes[m.i].lat = d.lat;
-                          nodes[m.i].lng = d.lng;
-                          multi.setLatLngs(nodes);*/
-
-                      } else if(me.rotateEnable){
-                          delta = me.getRotationAngleDelta(d, i, centroid, dxi, dyi);
-
-                          for(var o in onodes){
-                              me.rotateNode(onodes[o], centroid, delta);
-                          }
-
-                          if(total){
-                            total.setLatLng(nodes[nodes.length-1]);
-                          }
-
-                          multi.setLatLngs(nodes);
-                      }
-                  }
-              });
-
-              map.on('mouseup', function(e){
-                  if(m.nodedrag){
-                      m.nodedrag = false;
-                      map.dragging.enable();
-                      i = e.latlng;
-                      me.zeroNodes(nodes, onodes);
-                      me.dragging = false;
-                  }
-              });
+          map.on('mouseup', function(e){
+              if(layer.nodedrag){
+                  layer.nodedrag = false;
+                  map.dragging.enable();
+                  i = e.latlng;
+                  me.zeroNodes(nodes, onodes);
+                  me.dragging = false;
+              }
           });
       },
 
@@ -587,11 +624,10 @@
           return original - angle;
       },
 
-      setNodePosition: function(node, i, d){
+      setNodePosition: function(node, pos, d){
           var dx, dy;
 
-          var pos = this._map.latLngToContainerPoint(i),
-              delta_pos = this._map.latLngToContainerPoint(d),
+          var delta_pos = this._map.latLngToContainerPoint(d),
               node_pos = this._map.latLngToContainerPoint(node);
 
           dx = pos.x - delta_pos.x;
@@ -611,12 +647,13 @@
           node.lng = new_node.lng;
 
           node.node.setLatLng(new_node);
-
-          i = new_node;
       },
 
       reset: function(e){
-          //this.layer.off('click');
+          if(!this.layer) {
+            return;
+          }
+
           this.layer.off('dblclick');
 
           L.DomEvent.stop(e);
@@ -626,9 +663,11 @@
           this.resetRuler(false);
       },
 
-      onRenderNode: function(latLng, options){},
+      onRenderNode: function(latLng, options, layer){},
 
       onDraw: function(e){},
+
+      onRedraw: function(layer, multi){},
 
       onClick: function(e){},
 

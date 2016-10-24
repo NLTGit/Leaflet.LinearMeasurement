@@ -10,7 +10,7 @@
           this.link.title = 'Toggle measurement tool';
       },
 
-      onRenderNode: function(latLng, options){
+      onRenderNode: function(latLng, options, layer){
           if(!this.rulerEnable) return;
           var label = options.label,
               type = options.type,
@@ -30,7 +30,7 @@
             });
 
             options.icon = cicon;
-            options.marker = L.marker(p_latLng, { icon: cicon, type: type }).addTo(this.layer);
+            options.marker = L.marker(p_latLng, { icon: cicon, type: type }).addTo(layer);
             options.label = label;
           }
       },
@@ -41,10 +41,14 @@
           this.fixedLast = this.last;
       },
 
-      onDraw: function(e){
+      onDraw: function(e, multi, layer){
           if(!this.rulerEnable) return;
           this.drawTooltip(e);
-          this.drawRuler(e);
+          this.drawRuler();
+      },
+
+      onRedraw: function(layer, multi){
+          this.drawRulerLines(layer, multi);
       },
 
       onDblClick: function(e){
@@ -58,6 +62,7 @@
           L.DomEvent.stop(e);
 
           var workspace = this.layer,
+              map = this._map,
               label = this.measure.scalar + ' ' + this.measure.unit + ' ',
               total_scalar = this.measure.unit === this.SUB_UNIT ? this.measure.scalar/this.UNIT_CONV : this.measure.scalar,
               total_latlng = this.total.getLatLng(),
@@ -81,13 +86,18 @@
           };
 
           var fireSelected = function(e){
+              L.DomEvent.stop(e);
+
               if(L.DomUtil.hasClass(e.originalEvent.target, 'close')){
+                  map.off('mousemove', workspace);
+                  map.off('mouseup', workspace);
                   me.mainLayer.removeLayer(workspace);
               } else {
                   workspace.fireEvent('selected', data);
               }
           };
 
+          workspace.off('click');
           workspace.on('click', fireSelected);
           workspace.fireEvent('selected', data);
       },
@@ -123,8 +133,18 @@
           };
       },
 
+      clearAll: function(layer){
+          if(layer){
+              layer.eachLayer(function(l){
+                  if(l.options && l.options.type === 'tmp' || l.options.type === 'fixed'){
+                      layer.removeLayer(l);
+                  }
+              });
+          }
+      },
+
       cleanUpMarkers: function(fixed){
-          var layer = this.layer;
+          layer = this.layer;
 
           if(layer){
               layer.eachLayer(function(l){
@@ -151,7 +171,7 @@
           }
       },
 
-      displayMarkers: function(latlngs, multi, sum) {
+      displayMarkers: function(latlngs, multi, sum, layer) {
           var x, y, label, ratio, p,
               latlng = latlngs[latlngs.length-1],
               prevLatlng = latlngs[0],
@@ -162,7 +182,7 @@
               p1 = this._map.latLngToContainerPoint(prevLatlng),
               unit = 1;
 
-          if(this.measure.unit === this.SUB_UNIT){
+          if(layer.measure.unit === this.SUB_UNIT){
               unit = this.SUB_UNIT_CONV;
               dis = dis * unit;
           }
@@ -173,7 +193,7 @@
           for(var q = Math.floor(qu); q < t; q++){
               ratio = (t-q) / dis;
 
-              if(q % this.separation || q < qu) {
+              if(q % layer.separation || q < qu) {
                   continue;
               }
 
@@ -186,9 +206,11 @@
 
               latlng = this._map.containerPointToLatLng(p);
 
-              label = (q + ' ' + this.measure.unit);
+              label = (q + ' ' + layer.measure.unit);
 
-              this.renderCircle(latlng, 0, this.layer, multi ? 'fixed' : 'tmp', label);
+              if(q) {
+                  this.renderCircle(latlng, 0, layer, multi ? 'fixed' : 'tmp', label);
+              }
 
               this.last = t;
           }
@@ -203,14 +225,22 @@
           return { scalar: s, unit: u };
       },
 
-      calculateSum: function(){
+      getSum: function(){
           this.sum = 0;
 
-          var o, dis;
+          var o;
           for(var l in this.latlngsList){
               o = this.latlngsList[l];
               this.sum += o[0].distanceTo(o[1])/this.UNIT_CONV;
           }
+
+          return this.sum;
+      },
+
+      calculateSum: function(){
+          var dis;
+
+          this.getSum();
 
           if(this.measure.unit === this.SUB_UNIT){
               dis = this.sum * this.SUB_UNIT_CONV;
@@ -250,6 +280,23 @@
           }
       },
 
+      drawRulerLines: function(layer, multi){
+          this.clearAll(layer);
+
+          var latlngs = multi.getLatLngs(),
+              prev,
+              dimension = 0;
+
+          for(var s in latlngs){
+              if(s != 0) {
+                 dimension += this.displayMarkers.apply(this, [ [prev, latlngs[s]], true, dimension, layer]);
+              }
+              prev = latlngs[s];
+          }
+
+          return dimension;
+      },
+
       drawRuler: function(){
           /* Rules for separation using only distance criteria */
           var ds = this.measure.scalar,
@@ -257,33 +304,26 @@
               digits = parseInt(ds).toString().length,
               num = Math.pow(10, digits),
               real = ds > (num/2) ? (num/10) : (num/20),
-              dimension = 0;
+              multi = this.multi,
+              layer = this.layer;
 
           this.separation = real;
+          layer.separation = real;
+          layer.measure = this.measure;
+          this.getSum();
 
           /* If there is a change in the segment length we want to re-space
              the dots on the multi line */
-          if(old_separation !== this.separation && this.fixedLast){
-              this.cleanUpMarkers();
-              this.cleanUpFixed();
+          if(old_separation !== this.separation && this.fixedLast && multi){
+              var dimension = this.drawRulerLines(layer, multi);
 
-              var multi_latlngs = this.multi.getLatLngs(), prev;
-
-              for(var s in multi_latlngs){
-                  if(s != 0) {
-                     dimension += this.displayMarkers.apply(this, [ [prev, multi_latlngs[s]], true, dimension]);
-                  }
-                  prev = multi_latlngs[s];
-              }
-
-              this.displayMarkers.apply(this, [this.poly.getLatLngs(), false, this.sum]);
+              this.displayMarkers.apply(this, [this.poly.getLatLngs(), false, dimension, layer]);
 
               /* Review that the dots are in correct units */
               this.convertDots();
-
           } else {
               this.cleanUpMarkers();
-              this.displayMarkers.apply(this, [this.poly.getLatLngs(), false, this.sum]);
+              this.displayMarkers.apply(this, [this.poly.getLatLngs(), false, this.sum, layer]);
           }
       },
 
