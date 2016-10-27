@@ -1000,7 +1000,7 @@
 
       buildPaintPane: function(){
         var me = this,
-            map = L.DomUtil.get('map');
+            map = this._map.getContainer();
 
         this.paintPane = L.DomUtil.create('div', 'paint-pane', map);
 
