@@ -47,8 +47,9 @@
           this.drawRuler();
       },
 
-      onRedraw: function(layer, multi){
-          this.drawRulerLines(layer, multi);
+      onRedraw: function(layer, multi, poly){
+          if(!this.rulerEnable) return;
+          this.drawRulerLines(layer, multi, poly);
       },
 
       onDblClick: function(e){
@@ -280,10 +281,10 @@
           }
       },
 
-      drawRulerLines: function(layer, multi){
+      drawRulerLines: function(layer, multi, poly){
           this.clearAll(layer);
 
-          var latlngs = multi.getLatLngs(),
+          var latlngs = multi ? multi.getLatLngs() : [],
               prev,
               dimension = 0;
 
@@ -294,7 +295,9 @@
               prev = latlngs[s];
           }
 
-          return dimension;
+          if(poly){
+              this.displayMarkers.apply(this, [poly.getLatLngs(), false, dimension, layer]);
+          }
       },
 
       drawRuler: function(){
@@ -305,7 +308,8 @@
               num = Math.pow(10, digits),
               real = ds > (num/2) ? (num/10) : (num/20),
               multi = this.multi,
-              layer = this.layer;
+              layer = this.layer,
+              poly = this.poly;
 
           this.separation = real;
           layer.separation = real;
@@ -315,15 +319,12 @@
           /* If there is a change in the segment length we want to re-space
              the dots on the multi line */
           if(old_separation !== this.separation && this.fixedLast && multi){
-              var dimension = this.drawRulerLines(layer, multi);
-
-              this.displayMarkers.apply(this, [this.poly.getLatLngs(), false, dimension, layer]);
-
+              this.drawRulerLines(layer, multi, poly);
               /* Review that the dots are in correct units */
               this.convertDots();
           } else {
               this.cleanUpMarkers();
-              this.displayMarkers.apply(this, [this.poly.getLatLngs(), false, this.sum, layer]);
+              this.displayMarkers.apply(this, [poly.getLatLngs(), false, this.sum, layer]);
           }
       },
 

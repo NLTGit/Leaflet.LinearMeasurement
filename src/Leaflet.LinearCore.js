@@ -5,8 +5,17 @@
       options: {
           position: 'topleft',
           color: '#4D90FE',
-          contrastingColor: '#fff',
-          type: 'node' // node, line, polyline, polygon
+          fillColor: '#fff',
+          type: 'node', // node, line, polyline, polygon,
+          features: ['node', 'line', 'polygon', 'drag', 'rotate', 'nodedrag', 'ruler', 'paint', 'trash'],
+          pallette: ['#FF0080', '#4D90FE', 'red', 'blue', 'green', 'orange', 'black'],
+          dashArrayOptions: ['5, 5', '5, 10', '10, 5', '5, 1', '1, 5', '0.9', '15, 10, 5', '15, 10, 5, 10', '15, 10, 5, 10, 15', '5, 5, 1, 5'],
+          fill: true,
+          stroke: true,
+          dashArray: '5, 5',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.5
       },
 
       onAdd: function (map) {
@@ -70,16 +79,32 @@
 
           } else if(!this.options.color){
               this.options.color = '#4D90FE';
-
           }
 
           var originalColor = this.options.color.replace('#', '');
 
-          this.options.contrastingColor = '#'+contrastingColor(originalColor);
+          this.options.fillColor = '#'+contrastingColor(originalColor);
+
+          this.includeColor(this.options.color);
+          this.includeColor(this.options.fillColor);
 
           this.onAdded();
 
           return container;
+      },
+
+      includeColor: function(color){
+          var colorFound = false;
+
+          for(var o in this.options.pallette){
+              if(this.options.pallette[o] === color){
+                  colorFound = true;
+              }
+          }
+
+          if(!colorFound){
+              this.options.pallette.push(color);
+          }
       },
 
       onRemove: function(map){
@@ -101,7 +126,7 @@
           var features = this.features, cap;
 
           for(var i in features){
-              cap = features[i].charAt(0).toUpperCase() + features[i].slice(1);
+              cap = this.capString(features[i]);
               this[features[i]] = L.DomUtil.create('a', 'icon-'+features[i], container);
               this.toggleFeature(this[features[i]], this['enable'+cap], this['disable'+cap], features[i]);
               this[features[i]].href = '#';
@@ -112,7 +137,7 @@
       initRuler: function(container){
           var map = this._map;
 
-          this.features = this.options.features || ['node', 'line', 'polygon', 'drag', 'rotate', 'nodedrag', 'ruler'];
+          this.features = this.options.features;
 
           this.iconsInitial(container);
 
@@ -151,8 +176,6 @@
           this.layer = L.featureGroup();
           this.layer.addTo(this.mainLayer);
           this.layer.on('selected', this.onSelect);
-
-          //this.layer.on('click', this.getMouseClickHandler, this);
           this._map.on('mousemove', this.getMouseMoveHandler, this);
       },
 
@@ -163,6 +186,8 @@
               map.off('click', this.clickEventFn, this);
               map.off('mousemove', this.moveEventFn, this);
               map.off('dblclick', this.dblClickEventFn, map);
+
+              this.disablePaint();
 
               if(this.layer){
                   map.removeLayer(this.layer);
@@ -203,23 +228,24 @@
 
       renderCircle: function(latLng, radius, layer, type, label, skipLabel) {
           var color = this.options.color,
-              lineColor = this.options.color,
               r = 3;
 
           type = type || 'circle';
 
           if(type != 'node'){
               r = 1;
-              lineColor = 'blue';
+              color = 'blue';
           }
 
           linesHTML = [];
 
           var options = {
-              color: lineColor,
-              fillOpacity: 1,
-              opacity: 1,
-              fill: true,
+              color: color,
+              opacity: this.options.opacity,
+              fillOpacity: this.options.fillOpacity,
+              weight: this.options.weight,
+              fill: this.options.fill,
+              fillColor: this.options.fillColor,
               type: type,
               label: label
           };
@@ -236,12 +262,16 @@
           return circle;
       },
 
-      renderPolyline: function(latLngs, dashArray, layer) {
+      renderPolyline: function(latLngs, layer) {
           var poly = L.polyline(latLngs, {
               color: this.options.color,
-              weight: 2,
-              opacity: 1,
-              dashArray: dashArray
+              fill: this.options.fill,
+              fillColor: this.options.fillColor,
+              stroke: this.options.stroke,
+              opacity: this.options.opacity,
+              fillOpacity: this.options.fillOpacity,
+              weight: this.options.weight,
+              dashArray: this.options.dashArray
           });
 
           poly.addTo(layer);
@@ -249,31 +279,43 @@
           return poly;
       },
 
-      renderMultiPolyline: function(latLngs, dashArray, layer) {
+      renderMultiPolyline: function(latLngs, layer) {
           /* Leaflet version 1+ delegated the concept of multi-poly-line to the polyline */
           var multi;
 
           if(this.options.type === 'polygon'){
               multi = L.polygon(latLngs, {
                   color: this.options.color,
-                  weight: 2,
-                  opacity: 1,
-                  dashArray: dashArray
+                  fill: this.options.fill,
+                  fillColor: this.options.fillColor,
+                  stroke: this.options.stroke,
+                  opacity: this.options.opacity,
+                  fillOpacity: this.options.fillOpacity,
+                  weight: this.options.weight,
+                  dashArray: this.options.dashArray
               });
           } else {
               if(L.version.startsWith('0')){
                   multi = L.multiPolyline(latLngs, {
                       color: this.options.color,
-                      weight: 2,
-                      opacity: 1,
-                      dashArray: dashArray
+                      fill: this.options.fill,
+                      fillColor: this.options.fillColor,
+                      stroke: this.options.stroke,
+                      opacity: this.options.opacity,
+                      fillOpacity: this.options.fillOpacity,
+                      weight: this.options.weight,
+                      dashArray: this.options.dashArray
                   });
               } else {
                   multi = L.polyline(latLngs, {
                       color: this.options.color,
-                      weight: 2,
-                      opacity: 1,
-                      dashArray: dashArray
+                      fill: this.options.fill,
+                      fillColor: this.options.fillColor,
+                      stroke: this.options.stroke,
+                      opacity: this.options.opacity,
+                      fillOpacity: this.options.fillOpacity,
+                      weight: this.options.weight,
+                      dashArray: this.options.dashArray
                   });
               }
           }
@@ -296,12 +338,20 @@
       },
 
       getMouseClickHandler: function(e){
-          var me = this,
-              target = e.originalEvent.target;
-
           L.DomEvent.stop(e);
 
-          if(!me.nodeEnable && !me.lineEnable && !me.polygonEnable){
+          if(this.snappedLatLng){
+              e.latlng.lat = this.snappedLatLng.lat;
+              e.latlng.lng = this.snappedLatLng.lng;
+              this.doRenderNode(e);
+              return;
+          }
+
+          if(e.originalEvent.target.nodeName === 'INPUT'){
+            return;
+          }
+
+          if(!this.nodeEnable && !this.lineEnable && !this.polygonEnable){
               return;
           }
 
@@ -312,12 +362,13 @@
               clearTimeout(this.pid);
 
               if(isNode){
-                  me.initLayer();
+                  this.initLayer();
               }
 
               if(this.layer){
                   if(!this.multi && !isNode){
-                      this.multi = me.renderMultiPolyline(me.nodes, '5 5', me.layer, 'dot');
+                      this.multi = this.renderMultiPolyline(this.nodes, this.layer, 'dot');
+                      this.layer.multi = this.multi;
                   }
                   this.getMouseDblClickHandler(e);
               }
@@ -325,59 +376,123 @@
               this.pid = 0;
 
           } else {
-              this._map.off('mousemove', this.getMouseMoveHandler, this);
-
-              this.pid = setTimeout(function(){
-                  me.pid = 0;
-
-                  if(me.hasClass(target, ['leaflet-popup', 'total-popup-content'])){
-                      return;
-                  }
-
-                  if(!me.layer){
-                      me.initLayer();
-                  }
-
-                  me.doRenderNode(e);
-
-                  me._map.on('mousemove', me.getMouseMoveHandler, me);
-              }, 200);
+              this.displayNode(e);
           }
       },
 
-      doRenderNode: function(e, skipLabel){
+      displayNode: function(e, isSnapping){
+          var me = this,
+              t = 200,
+              target = e.originalEvent.target;
+
+          if(isSnapping){
+              this.snappedLatLng = L.latLng(e.latlng);
+          }
+
+          this._map.off('mousemove', this.getMouseMoveHandler, this);
+
+          this.pid = setTimeout(function(){
+              me.pid = 0;
+
+              if(me.hasClass(target, ['leaflet-popup', 'total-popup-content'])){
+                  return;
+              }
+
+              if(!me.layer){
+                  me.initLayer();
+              }
+
+              me.doRenderNode(e, isSnapping);
+
+              me._map.on('mousemove', me.getMouseMoveHandler, me);
+          }, t);
+      },
+
+      doRenderNode: function(e, isSnapping){
           var latlng = e.latlng,
+              nodes = this.nodes,
               me = this;
+
+          if(isSnapping && this.poly){
+              this.poly.setLatLngs([me.prevLatlng, latlng]);
+              this.onRedraw(this.layer, this.multi, this.poly);
+              return;
+          }
+
+          me.prevLatlng = latlng;
 
           if(!me.originalLatLng){
               me.originalLatLng = latlng;
           }
 
-          me.prevLatlng = latlng;
-
           me.nodes.push(latlng);
-
           me.onClick(e);
 
           if(me.poly){
               me.latlngsList.push(me.latlngs);
 
               if(!me.multi){
-                  me.multi = me.renderMultiPolyline(me.nodes, '5 5', me.layer, 'node');
+                  me.multi = me.renderMultiPolyline(nodes, me.layer, 'node');
               } else {
-                  me.multi.setLatLngs(me.nodes);
+                  me.multi.setLatLngs(nodes);
               }
           }
 
           me.renderCircle(latlng, 0, me.layer, 'node', '', true);
       },
 
+      setSnapLatLng: function(e){
+          var newLatLng = this.getSnapLatLng(e);
+
+          if(newLatLng){
+            e.latlng.lat = newLatLng.lat;
+            e.latlng.lng = newLatLng.lng;
+            this.displayNode(e, true);
+            return true;
+
+          } else {
+            return false;
+          }
+      },
+
+      getSnapLatLng: function(e){
+          var latlng = false;
+          this.mainLayer.eachLayer(function(layer){
+              layer.eachLayer(function(m){
+                  if(m.options.type === 'node' && m.getLatLng().equals(e.latlng, 0.005)){
+                      latlng = L.latLng(m.getLatLng());
+                      return;
+                  }
+              });
+              if(latlng){
+                return;
+              }
+          });
+
+          return latlng;
+      },
+
       getMouseMoveHandler: function(e){
           if(this.prevLatlng && this.options.shape > 1 && !this.nodeEnable){
-              this.latlngs = [this.prevLatlng, e.latlng];
+              if(this.snappedLatLng){
+                  if(e.latlng.equals(this.snappedLatLng, 0.005)){
+                      return;
+                  }
+              }
+
+              this.snappedLatLng = null;
+
+              if(this.setSnapLatLng(e)){
+                  return;
+              }
+
+              var start = this.prevLatlng,
+                  end = e.latlng;
+
+              this.latlngs = [start, end];
 
               if(!this.poly){
-                  this.poly = this.renderPolyline(this.latlngs, '5 5', this.layer);
+                  this.poly = this.renderPolyline(this.latlngs, this.layer);
               } else {
                   this.poly.setLatLngs(this.latlngs);
               }
@@ -390,7 +505,7 @@
           var me = this;
 
           if(this.options.shape > 1){
-              this.doRenderNode(e, true);
+              this.doRenderNode(e);
               this.onDblClick(e);
           }
 
@@ -407,6 +522,25 @@
                   latlng.node = m;
                   onodes.push(latlng);
               }
+          });
+
+          return onodes;
+      },
+
+      fillAllnodes: function(myLayer){
+          var onodes = [];
+
+          this.mainLayer.eachLayer(function(layer){
+              if(layer == myLayer){
+                return;
+              }
+              layer.eachLayer(function(m){
+                  if(m.options.type === 'node') {
+                      var latlng = m.getLatLng();
+                      latlng.node = m;
+                      onodes.push(latlng);
+                  }
+              });
           });
 
           return onodes;
@@ -482,6 +616,23 @@
           return nearings;
       },
 
+      getNearestNode: function(e, onodes){
+        for(var o in onodes){
+          if(onodes[o].equals(e.latlng, 0.003)){
+            return L.latLng(onodes[o]);
+          }
+        }
+        return false;
+      },
+
+      getSelectedNode: function(e, latlngs){
+        for(var ll in latlngs){
+            if(latlngs[ll].equals(e.latlng, 0.005)){
+               return latlngs[ll];
+            }
+        }
+      },
+
       enableShapeNodeDrag: function(layer){
           var me = this,
               map = this._map,
@@ -489,11 +640,22 @@
               multi = this.multi,
               total = this.total,
               main = this.mainLayer,
+              selectedNode = null,
+              nearLatLng,
+              d, delta,
               nearings = [],
-              onodes = [];
+              onodes = [],
+              type = me.options.type,
+              anodes = [];
 
-          if(!multi){
-              return;
+          if(multi){
+              multi.nodes = nodes;
+          } else {
+              layer.eachLayer(function(m){
+                if(m.options.type === 'node'){
+                  selectedNode = { node: m };
+                }
+              });
           }
 
           onodes = me.fillOnodes(layer);
@@ -505,44 +667,71 @@
               if(me.rotateEnable || me.nodedragEnable){
                   map.dragging.disable();
                   me.dragging = true;
-                  centroid = map.latLngToContainerPoint(multi.getCenter());
 
-                  i = e.latlng;
+                  if(multi){
+                      centroid = map.latLngToContainerPoint(multi.getCenter());
 
-                  pos_i = map.latLngToContainerPoint(i);
-                  dxi = pos_i.x - centroid.x;
-                  dyi = pos_i.y - centroid.y;
+                      i = e.latlng;
+
+                      pos_i = map.latLngToContainerPoint(i);
+                      dxi = pos_i.x - centroid.x;
+                      dyi = pos_i.y - centroid.y;
+
+                      var positions = multi.getLatLngs(),
+                          latlngs = [];
+
+                      if(type === 'polygon'){
+                        for(var p in positions){
+                            for(var ll in positions[p]){
+                              latlngs.push(positions[p][ll]);
+                            }
+                        }
+                        selectedNode = me.getSelectedNode(e, latlngs);
+                      } else {
+                        selectedNode = me.getSelectedNode(e, positions);
+                      }
+                  }
 
                   layer.nodedrag = true;
+
+                  anodes = me.fillAllnodes(layer);
               }
           });
 
           map.on('mousemove', function(e){
               if(layer.nodedrag){
-                  var d = e.latlng,
-                      delta = 0;
+                  d = e.latlng;
+                  delta = 0;
 
                   if(me.nodedragEnable){
-                      nearings = me.getNearings(d, 0.005);
+                      if(selectedNode){
 
-                      for(var r in nearings){
-                        nearings[r].setLatLng(d);
-                      }
+                          if(nearLatLng && !nearLatLng.equals(d, 0.003)){
+                              nearLatLng = null;
 
-                      var latlngs = multi.getLatLngs();
+                          } else {
+                              nearLatLng = me.getNearestNode(e, anodes);
+                          }
 
-                      for(var ll in latlngs){
-                          if(latlngs[ll].equals(d, 0.005)){
-                             latlngs[ll].lat = d.lat;
-                             latlngs[ll].lng = d.lng;
+                          if(nearLatLng){
+                              d.lat = nearLatLng.lat;
+                              d.lng = nearLatLng.lng;
+                          }
+
+                          selectedNode.lat = d.lat;
+                          selectedNode.lng = d.lng;
+
+                          if(selectedNode.node){
+                            selectedNode.node.setLatLng([d.lat, d.lng]);
+                          }
+
+                          if(multi){
+                              multi.setLatLngs(nodes);
+                              me.onRedraw(layer, multi);
                           }
                       }
 
-                      multi.setLatLngs(nodes);
-
-                      me.onRedraw(layer, multi);
-
-                  } else if(me.rotateEnable){
+                  } else if(multi && me.rotateEnable){
                       delta = me.getRotationAngleDelta(d, i, centroid, dxi, dyi);
 
                       for(var o in onodes){
@@ -560,6 +749,7 @@
 
           map.on('mouseup', function(e){
               if(layer.nodedrag){
+                  nearLatLng = null;
                   layer.nodedrag = false;
                   map.dragging.enable();
                   i = e.latlng;
@@ -667,7 +857,7 @@
 
       onDraw: function(e){},
 
-      onRedraw: function(layer, multi){},
+      onRedraw: function(layer, multi, poly){},
 
       onClick: function(e){},
 
@@ -678,7 +868,7 @@
       onSelect: function(e){},
 
       enableFeature: function(feature, isType, isFeature){
-          if(feature != 'ruler'){
+          if(feature != 'ruler' && feature != 'paint' && feature != 'trash'){
               this.disableFeature('node');
               this.disableFeature('line');
               this.disableFeature('polygon');
@@ -686,6 +876,7 @@
               this.disableFeature('rotate');
               this.disableFeature('nodedrag');
           }
+
           if(isType){
               this.disableFeature('node');
               this.disableFeature('line');
@@ -772,6 +963,300 @@
 
       disableRuler: function(){
           this.disableFeature('ruler');
+      },
+
+      enableTrash: function(){
+          var me = this;
+          this.enableFeature('trash', false, false);
+          this.mainLayer.eachLayer(function(layer){
+            me.mainLayer.removeLayer(layer);
+          });
+          me.resetRuler();
+          setTimeout(function(){
+            me.disableFeature('trash');
+          }, 100);
+      },
+
+      disableTrash: function(){
+          this.disableFeature('trash');
+      },
+
+      enablePaint: function(){
+          this.enableFeature('paint', false, true);
+
+          if(this.paintPane){
+            L.DomUtil.removeClass(this.paintPane, 'not-visible');
+          } else {
+            this.buildPaintPane();
+          }
+      },
+
+      disablePaint: function(){
+        this.disableFeature('paint');
+        if(this.paintPane){
+          L.DomUtil.addClass(this.paintPane, 'not-visible');
+        }
+      },
+
+      buildPaintPane: function(){
+        var me = this,
+            map = L.DomUtil.get('map');
+
+        this.paintPane = L.DomUtil.create('div', 'paint-pane', map);
+
+        var draggable = new L.Draggable(this.paintPane);
+        draggable.enable();
+
+        this.buildPaneHeader();
+
+        this.buildPaneSection('color', function(){
+          me['paintColor'].addEventListener('click', function(e){
+              L.DomEvent.stop(e);
+
+              if(L.DomUtil.hasClass(e.target, 'clickable')){
+                  var parent = e.target.nodeName === 'SPAN' ? e.target.parentElement : e.target,
+                      color = parent.getAttribute('color'),
+                      ul = parent.parentElement,
+                      children = ul.childNodes;
+
+                  for(n in children){
+                      if(me.isElement(children[n])){
+                        L.DomUtil.removeClass(children[n], 'paint-color-selected');
+                      }
+                  }
+
+                  L.DomUtil.addClass(parent, 'paint-color-selected');
+                  me.options.color = color;
+              }
+          });
+        });
+
+        this.buildPaneSection('fillColor', function(){
+          me['paintFillColor'].addEventListener('click', function(e){
+              L.DomEvent.stop(e);
+
+              if(L.DomUtil.hasClass(e.target, 'clickable')){
+                  var parent = e.target.nodeName === 'SPAN' ? e.target.parentElement : e.target,
+                      color = parent.getAttribute('color'),
+                      ul = parent.parentElement,
+                      children = ul.childNodes;
+
+                  for(n in children){
+                      if(me.isElement(children[n])){
+                        L.DomUtil.removeClass(children[n], 'paint-color-selected');
+                      }
+                  }
+
+                  L.DomUtil.addClass(parent, 'paint-color-selected');
+                  me.options.fillColor = color;
+              }
+          });
+        });
+
+        this.buildPaneSection('flags', function(){
+          me['paintFlags'].addEventListener('click', function(e){
+              if(L.DomUtil.hasClass(e.target, 'clickable')){
+                  if(e.target.nodeName === 'INPUT'){
+                      if(e.target.checked){
+                        me.options[e.target.getAttribute('flag')] = true;
+
+                      } else {
+                        me.options[e.target.getAttribute('flag')] = false;
+                      }
+                  }
+              }
+          });
+        });
+
+        this.buildPaneSection('dashArray', function(){
+          me['paintDashArray'].addEventListener('click', function(e){
+              L.DomEvent.stop(e);
+
+              if(L.DomUtil.hasClass(e.target, 'clickable')){
+                  var parent = e.target.parentElement,
+                      children = parent.childNodes;
+
+                  for(n in children){
+                      if(me.isElement(children[n]) || children[n].nodeName){
+                        L.DomUtil.removeClass(children[n], 'line-selected');
+                      }
+                  }
+
+                  L.DomUtil.addClass(e.target, 'line-selected');
+                  me.options.dashArray = e.target.getAttribute('stroke-dasharray').replace(/,/g, '');
+              }
+          });
+        });
+
+        this.buildPaneSection('opacity', function(){
+          me['paintOpacity'].addEventListener('mousedown', function(e){
+              L.DomEvent.stop(e);
+          });
+
+          me['paintOpacity'].addEventListener('click', function(e){
+              L.DomEvent.stop(e);
+              if(L.DomUtil.hasClass(e.target, 'clickable')){
+                  if(e.target.nodeName === 'INPUT'){
+                      me.options[e.target.getAttribute('flag')] = e.target.value;
+                  }
+              }
+          });
+        });
+      },
+
+      buildPaneHeader: function(){
+          var me = this;
+
+          var header = [
+            '<span>Styling Options</span><i class="close">x</i>'
+          ].join('');
+
+          this.paintPaneHeader = L.DomUtil.create('div', 'paint-pane-header', this.paintPane);
+          this.paintPaneHeader.innerHTML = header;
+
+          this.paintPaneHeader.addEventListener('click', function(e){
+              if(e.target.nodeName === 'I'){
+                  me.disablePaint();
+              }
+          });
+      },
+
+      buildPaneSection: function(section, callback){
+        var me = this,
+            cap = this.capString(section);
+
+        var html = this['build'+cap+'Section']();
+
+        this['paint'+cap] = L.DomUtil.create('div', 'paint-pane-section paint-pane-'+section, this.paintPane);
+        this['paint'+cap].innerHTML = html;
+
+        if(callback && typeof callback === 'function'){
+          callback();
+        }
+      },
+
+      buildColorSection: function(){
+        var colors = this.options.pallette,
+            selected = '',
+            content = [];
+
+        for(c in colors){
+            selected = colors[c] === this.options.color ? 'paint-color-selected' : '';
+            content.push('<li class="paint-color clickable '+selected+'" color="'+colors[c]+'"><span class="clickable" style="background-color: '+colors[c]+';"></span></li>');
+        }
+
+        var html = [
+          '<span class="section-header">Stroke</span>',
+          '<ul class="section-body paint-color-wrapper">',
+            content.join(''),
+          '</ul>'
+        ].join('');
+
+        return html;
+      },
+
+      buildFillColorSection: function(){
+        var colors = this.options.pallette,
+            selected = '',
+            content = [];
+
+        for(c in colors){
+            selected = colors[c] === this.options.fillColor ? 'paint-color-selected' : '';
+            content.push('<li class="paint-color clickable '+selected+'" color="'+colors[c]+'"><span class="clickable" style="background-color: '+colors[c]+';"></span></li>');
+        }
+
+        var html = [
+          '<span class="section-header">Fill Color</span>',
+          '<ul class="section-body paint-color-wrapper">',
+            content.join(''),
+          '</ul>'
+        ].join('');
+
+        return html;
+      },
+
+      buildFlagsSection: function(){
+        var flags = ['stroke', 'fill'],
+            selected = '',
+            content = [];
+
+        for(f in flags){
+            selected = this.options[flags[f]] ? 'checked' : '';
+            content.push('<div><input value="'+flags[f]+'" type="checkbox" '+selected+' class="clickable" flag="'+flags[f]+'"> Draw ' + flags[f] + '</div>');
+        }
+
+        var html = [
+          '<span class="section-header">Options</span>',
+          '<div class="section-body">',
+            content.join(''),
+          '</div>'
+        ].join('');
+
+        return html;
+      },
+
+      buildDashArraySection: function(){
+        var dashes = this.options.dashArrayOptions,
+            selected = '',
+            content = [],
+            y = 10;
+
+        for(d in dashes){
+            selected = this.options.dashArray === dashes[d] ? 'line-selected' : '';
+            content.push('<line class="clickable pain-lines '+selected+'" stroke-dasharray="'+dashes[d]+'" x1="10" y1="'+y+'" x2="160" y2="'+y+'" />');
+            y += 20;
+        }
+
+        var html = [
+          '<span class="section-header">Dash Array</span>',
+          '<svg class="section-body" width="200" height="200" viewPort="0 0 200 300" version="1.1" xmlns="http://www.w3.org/2000/svg">',
+            content.join(''),
+          '</svg>'
+        ].join('');
+
+        return html;
+      },
+
+      buildOpacitySection: function(){
+        var flags = ['opacity', 'fillOpacity', 'weight'],
+            selected = '',
+            content = [],
+            max = 0,
+            step = 0,
+            caps = '';
+
+        for(f in flags){
+            if(flags[f] === 'weight'){
+              max = 10;
+              step = 1;
+            } else {
+              max = 1.0;
+              step = 0.1;
+            }
+            content.push('<span class="section-header">'+this.capString(flags[f])+'</span>');
+            content.push('<div class="section-body">');
+            content.push(' <div><input value="'+this.options[flags[f]]+'" type="range" min="0" max="'+max+'" step="'+step+'" class="clickable" flag="'+flags[f]+'"></div>');
+            content.push('</div>');
+        }
+
+        return content.join('');
+      },
+
+      isElement: function(obj) {
+        try {
+          return obj instanceof HTMLElement;
+        }
+        catch(e){
+          return (typeof obj==="object") &&
+            (obj.nodeType===1) && (typeof obj.style === "object") && (typeof obj.ownerDocument === "object");
+        }
+      },
+
+      capString: function(str){
+        if(str.substring && str.length){
+          str = str.substring(0, 1).toUpperCase() + str.substring(1);
+        }
+        return str;
       }
   });
 
