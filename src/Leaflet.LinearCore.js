@@ -122,16 +122,16 @@
 
             if(this.options.type === 'line'){
                 this.enableLine();
+
             } else if(this.options.type === 'polygon'){
                 this.enablePolygon();
+
             } else {
                 this.enableNode();
+
             }
 
-            this.loadLayer = L.layerGroup();
-            this.loadLayer.addTo(this._map);
-
-            this.mainLayer = L.layerGroup();
+            this.mainLayer = L.featureGroup();
             this.mainLayer.addTo(this._map);
 
             map.touchZoom.disable();
@@ -151,16 +151,22 @@
 
             map.on('dblclick', this.dblClickEventFn, map);
 
+            this.mainLayer.on('dblclick', this.dblClickEventFn, this.mainLayer);
+
             map.on('shape_toggle', function(data){
-                var id = data.id;
+                var id = data.id,
+                    geo = me.getGeoJson(id),
+                    selected = me.getLayerById(id);
 
-                var selected = me.getLayerById(id);
+                geo.properties.hidden = data.hidden;
+                me.updateGeoJson(geo);
 
-                if(selected){
-                    me.loadLayer.removeLayer(selected);
-                } else {
-                    me.plotGeoShapes(id);
+                if(selected && data.hidden){
+                    me.mainLayer.removeLayer(selected);
+                } else if(!data.hidden){
+                    me.plotGeoJsons(id);
                 }
+
             });
 
             map.on('shape_delete', function(data){
@@ -168,46 +174,157 @@
                     selected = me.getLayerById(id);
 
                 if(selected){
-                    me.loadLayer.removeLayer(selected);
+                    me.mainLayer.removeLayer(selected);
+                    me.deleteGeoJson(id);
                 }
             });
 
-            this.plotGeoShapes();
+            map.on('shape_focus', function(data){
+                var id = data.id,
+                    selected = me.getLayerById(id);
+
+                if(selected){
+                    me.selectedLayer = selected;
+                    map.setView(selected.getBounds().getCenter());
+                }
+            });
+
+            this.plotGeoJsons();
         },
 
-        plotGeoShapes: function(id){
+        getGeoJsons: function(){
+            return sessionStorage.geos ? JSON.parse(sessionStorage.geos) : [];
+        },
+
+        getGeoJson: function(id){
+            var geos = this.getGeoJsons();
+
+            for(var g in geos){
+                if(geos[g].properties.id === id){
+                    geos[g].index = parseInt(g);
+                    return geos[g];
+                }
+            }
+
+            return null;
+        },
+
+        deleteGeoJson: function(id){
+            var geos = this.getGeoJsons(),
+                geo = this.getGeoJson(id);
+
+            if(geo){
+               geos.splice(geo.index, 1);
+               this.saveGeoJsons(geos);
+            }
+        },
+
+        purgeGeoJsons: function(){
+            this.saveGeoJsons([]);
+        },
+
+        saveGeoJsons: function(geos){
+            geos = JSON.stringify(geos);
+            sessionStorage.geos = geos;
+            this._map.fire('shape_changed');
+        },
+
+        updateGeoJson: function(geo){
+            this.deleteGeoJson(geo.properties.id);
+            this.insertGeoJson(geo);
+        },
+
+        insertGeoJson: function(geo){
+            var geos = this.getGeoJsons();
+            geos.push(geo);
+            this.saveGeoJsons(geos);
+        },
+
+        persistGeoJson: function(layer){
+            var me = this,
+                geo, g,
+                features = [],
+                operation = layer.options.id ? 'update' : 'insert',
+                id = layer.options.id || (new Date()).getTime();
+
+            layer.options.id = id;
+
+            if(this.poly){
+                layer.removeLayer(this.poly);
+            }
+
+            layer.eachLayer(function(l){
+                g = l.toGeoJSON();
+                g.properties.styles = l.options;
+
+                if(l.options.marker){
+                    delete g.properties.styles.marker;
+                }
+                features.push(g);
+            });
+
+            geo = {
+                type: "FeatureCollection",
+                properties: {
+                    id: id,
+                    measure: layer.measure,
+                    separation: layer.separation,
+                    hidden: false,
+                    description: '... temp string. This would be provided by user.',
+                    name: ('Name ' + id),
+                },
+                features: features
+            };
+
+            this[operation+'GeoJson'](geo);
+        },
+
+        plotGeoJsons: function(id){
             var me = this;
 
             this.resetRuler();
 
             this.enableRuler();
 
-            var geos = sessionStorage.geos ? JSON.parse(sessionStorage.geos) : [],
+            var geos = this.getGeoJsons(),
                 gLayer, multi;
 
-            for(g in geos){
-                if(id && id !== geos[g].properties.id){
+            var pointToLayerFn = function (feature, latlng) {
+                return me.renderCircle(latlng, false, false, false, true, feature.properties.styles);
+            };
+
+            var styleFn = function(feature){
+                return feature.properties.styles;
+            };
+
+            var searchLayerFn = function(layer){
+                if(layer.getLatLngs){
+                    multi = layer;
+                }
+            };
+
+            for(var g in geos){
+
+                if(id && id !== geos[g].properties.id || geos[g].properties.hidden){
                     continue;
                 }
+
+                props = geos[g].properties;
+
                 gLayer = L.geoJson(geos[g], {
-                    pointToLayer: function (feature, latlng) {
-                        return me.renderCircle(latlng, false, false, false, true, feature.properties.styles);
-                    },
-                    style: function(feature){
-                        return feature.properties.styles;
-                    },
-                    id: geos[g].properties.id,
-                    measure: geos[g].properties.measure,
-                    separation: geos[g].properties.separation
-                }).addTo(this.loadLayer);
+                    pointToLayer: pointToLayerFn,
+                    style: styleFn,
+                    id: props.id,
+                    hidden: props.hidden,
+                    description: props.description,
+                    name: props.name,
+                    measure: props.measure,
+                    separation: props.separation
+                }).addTo(this.mainLayer);
 
                 multi = null;
 
-                gLayer.eachLayer(function(layer){
-                    if(layer.getLatLngs){
-                        multi = layer;
-                    }
-                });
+                gLayer.eachLayer(searchLayerFn);
 
                 gLayer.multi = multi;
                 gLayer.measure = gLayer.options.measure;
@@ -217,7 +334,7 @@
                     me.onRedraw(gLayer, multi);
                 }
 
-                //me.enableShapeDrag(gLayer);
+                me.enableShapeDrag(gLayer);
             }
         },
 
@@ -226,6 +343,7 @@
             this.layer.addTo(this.mainLayer);
             this.layer.on('selected', this.onSelect);
             this._map.on('mousemove', this.getMouseMoveHandler, this);
+            this.anodes = this.fillAllnodes(this.layer);
         },
 
         resetRuler: function(resetLayer){
@@ -235,6 +353,8 @@
                 map.off('click', this.clickEventFn, this);
                 map.off('mousemove', this.moveEventFn, this);
                 map.off('dblclick', this.dblClickEventFn, map);
+
+                this.mainLayer.off('dblclick', this.dblClickEventFn, this.mainLayer);
 
                 this.disablePaint();
 
@@ -246,12 +366,7 @@
                     map.removeLayer(this.mainLayer);
                 }
 
-                if(this.loadLayer){
-                    map.removeLayer(this.loadLayer);
-                }
-
                 this.mainLayer = null;
-                this.loadLayer = null;
 
                 map.touchZoom.enable();
                 map.boxZoom.enable();
@@ -282,7 +397,8 @@
 
         getLayerById: function(id){
             var found = null;
-            this.loadLayer.eachLayer(function(layer){
+
+            this.mainLayer.eachLayer(function(layer){
                 if(layer.options.id === id){
                     found = layer;
                     return;
@@ -407,9 +523,9 @@
         getMouseClickHandler: function(e){
             L.DomEvent.stop(e);
 
-            if(this.snappedLatLng){
-                e.latlng.lat = this.snappedLatLng.lat;
-                e.latlng.lng = this.snappedLatLng.lng;
+            if(this.nearLatLng){
+                e.latlng.lat = this.nearLatLng.lat;
+                e.latlng.lng = this.nearLatLng.lng;
                 this.doRenderNode(e);
                 return;
             }
@@ -453,7 +569,7 @@
                 target = e.originalEvent.target;
 
             if(isSnapping){
-                this.snappedLatLng = L.latLng(e.latlng);
+                this.nearLatLng = L.latLng(e.latlng);
             }
 
             this._map.off('mousemove', this.getMouseMoveHandler, this);
@@ -542,28 +658,23 @@
                 if(latlng){ return; }
             });
 
-            if(!latlng){
-                this.loadLayer.eachLayer(function(layer){
-                    latlng = me.searchNearNodes(e, layer);
-                    if(latlng){ return; }
-                });
-            }
 
             return latlng;
         },
 
         getMouseMoveHandler: function(e){
             if(this.prevLatlng && this.options.shape > 1 && !this.nodeEnable){
-                if(this.snappedLatLng){
-                    if(e.latlng.equals(this.snappedLatLng, 0.005)){
-                        return;
-                    }
+
+                if(this.nearLatLng && !this.nearLatLng.equals(e.latlng, 0.003)){
+                    this.nearLatLng = null;
+
+                } else {
+                    this.nearLatLng = this.getNearestNode(e, this.anodes);
                 }
 
-                this.snappedLatLng = null;
-
-                if(this.setSnapLatLng(e)){
-                    return;
+                if(this.nearLatLng){
+                    e.latlng.lat = this.nearLatLng.lat;
+                    e.latlng.lng = this.nearLatLng.lng;
                 }
 
                 var start = this.prevLatlng,
@@ -594,45 +705,6 @@
             me.persistGeoJson(me.layer);
 
             me.reset(e);
-        },
-
-        persistGeoJson: function(layer){
-            var me = this,
-                geo, g,
-                geos = [],
-                features = [];
-
-            if(this.poly){
-                layer.removeLayer(this.poly);
-            }
-
-            layer.eachLayer(function(l){
-                g = l.toGeoJSON();
-                g.properties.styles = l.options;
-
-                if(l.options.marker){
-                    delete g.properties.styles.marker;
-                }
-                features.push(g);
-            });
-
-            geo = {
-                type: "FeatureCollection",
-                properties: {
-                    id: (new Date()).getTime(),
-                    measure: layer.measure,
-                    separation: layer.separation
-                },
-                features: features
-            };
-
-            if(sessionStorage.geos){
-                geos = JSON.parse(sessionStorage.geos);
-            }
-
-            geos.push(geo);
-            sessionStorage.geos = JSON.stringify(geos);
-            this._map.fire('draw_shape');
         },
 
         fillOnodes: function(layer){
@@ -669,10 +741,6 @@
                 me.searchForAllNodes(layer, myLayer, onodes);
             });
 
-            this.loadLayer.eachLayer(function(layer){
-                me.searchForAllNodes(layer, myLayer, onodes);
-            });
-
             return onodes;
         },
 
@@ -681,7 +749,7 @@
                 map = this._map,
                 m,
                 i = null,
-                total = this.total,
+                total = layer.total,
                 nodes = [],
                 onodes = [],
                 pos;
@@ -689,7 +757,7 @@
             layer.eachLayer(function(l){
                 if(l.getLatLngs){
                     m = l;
-                } else {
+                } else if(l.options.type === 'node'){
                     nodes.push(L.latLng(l.getLatLng()));
                 }
             });
@@ -721,6 +789,7 @@
 
                     if(m){
                         m.setLatLngs(nodes);
+                        me.onRedraw(layer, m);
                     }
                 }
             }, layer);
@@ -732,10 +801,11 @@
                     me.dragging = false;
                     i = e.latlng;
                     me.zeroNodes(nodes, onodes);
+                    me.persistGeoJson(layer);
                 }
             }, layer);
 
-            this.enableShapeNodeDrag(layer);
+            this.enableShapeNodeDrag(layer, m, nodes);
         },
 
         getNearestNode: function(e, onodes){
@@ -749,18 +819,16 @@
 
         getSelectedNode: function(e, latlngs){
             for(var ll in latlngs){
-                if(latlngs[ll].equals(e.latlng, 0.005)){
+                if(latlngs[ll].equals && latlngs[ll].equals(e.latlng, 0.005)){
                     return latlngs[ll];
                 }
             }
         },
 
-        enableShapeNodeDrag: function(layer){
+        enableShapeNodeDrag: function(layer, multi, nodes){
             var me = this,
                 map = this._map,
-                nodes = [],
-                multi,
-                total = this.total,
+                total = layer.total,
                 selectedNode = null,
                 nearLatLng,
                 d, delta,
@@ -768,14 +836,6 @@
                 onodes = [],
                 type = me.options.type,
                 anodes = [];
-
-            layer.eachLayer(function(l){
-                if(l.getLatLngs){
-                    multi = l;
-                } else {
-                    nodes.push(L.latLng(l.getLatLng()));
-                }
-            });
 
             if(multi){
                 multi.nodes = nodes;
@@ -856,7 +916,7 @@
 
                             if(multi){
                                 multi.setLatLngs(nodes);
-                                me.onRedraw(layer, multi);
+                                me.onRedraw(layer, multi, false);
                             }
                         }
 
@@ -872,6 +932,7 @@
                         }
 
                         multi.setLatLngs(nodes);
+                        me.onRedraw(layer, multi);
                     }
                 }
             });
@@ -884,6 +945,7 @@
                     i = e.latlng;
                     me.zeroNodes(nodes, onodes);
                     me.dragging = false;
+                    me.persistGeoJson(layer);
                 }
             });
         },
@@ -1096,14 +1158,19 @@
 
         enableTrash: function(){
             var me = this;
+
             this.enableFeature('trash', false, false);
+
             this.mainLayer.eachLayer(function(layer){
                 me.mainLayer.removeLayer(layer);
             });
-            this.loadLayer.eachLayer(function(layer){
-                me.loadLayer.removeLayer(layer);
-            });
+
+            this.purgeGeoJsons();
+
+            this._map.fire('shape_changed');
+
             me.resetRuler();
+
             setTimeout(function(){
                 me.disableFeature('trash');
             }, 100);
@@ -1142,7 +1209,7 @@
             this.buildPaneHeader();
 
             this.buildPaneSection('color', function(){
-                me['paintColor'].addEventListener('click', function(e){
+                me.paintColor.addEventListener('click', function(e){
                     L.DomEvent.stop(e);
 
                     if(L.DomUtil.hasClass(e.target, 'clickable')){
@@ -1151,7 +1218,7 @@
                             ul = parent.parentElement,
                             children = ul.childNodes;
 
-                        for(n in children){
+                        for(var n in children){
                             if(me.isElement(children[n])){
                                 L.DomUtil.removeClass(children[n], 'paint-color-selected');
                             }
@@ -1164,7 +1231,7 @@
             });
 
             this.buildPaneSection('fillColor', function(){
-                me['paintFillColor'].addEventListener('click', function(e){
+                me.paintFillColor.addEventListener('click', function(e){
                     L.DomEvent.stop(e);
 
                     if(L.DomUtil.hasClass(e.target, 'clickable')){
@@ -1173,7 +1240,7 @@
                             ul = parent.parentElement,
                             children = ul.childNodes;
 
-                        for(n in children){
+                        for(var n in children){
                             if(me.isElement(children[n])){
                                 L.DomUtil.removeClass(children[n], 'paint-color-selected');
                             }
@@ -1186,7 +1253,7 @@
             });
 
             this.buildPaneSection('flags', function(){
-                me['paintFlags'].addEventListener('click', function(e){
+                me.paintFlags.addEventListener('click', function(e){
                     if(L.DomUtil.hasClass(e.target, 'clickable')){
                         if(e.target.nodeName === 'INPUT'){
                             if(e.target.checked){
@@ -1201,14 +1268,14 @@
             });
 
             this.buildPaneSection('dashArray', function(){
-                me['paintDashArray'].addEventListener('click', function(e){
+                me.paintDashArray.addEventListener('click', function(e){
                     L.DomEvent.stop(e);
 
                     if(L.DomUtil.hasClass(e.target, 'clickable')){
                         var parent = e.target.parentElement,
                             children = parent.childNodes;
 
-                        for(n in children){
+                        for(var n in children){
                             if(me.isElement(children[n]) || children[n].nodeName){
                                 L.DomUtil.removeClass(children[n], 'line-selected');
                             }
@@ -1221,11 +1288,11 @@
             });
 
             this.buildPaneSection('opacity', function(){
-                me['paintOpacity'].addEventListener('mousedown', function(e){
+                me.paintOpacity.addEventListener('mousedown', function(e){
                     L.DomEvent.stop(e);
                 });
 
-                me['paintOpacity'].addEventListener('click', function(e){
+                me.paintOpacity.addEventListener('click', function(e){
                     L.DomEvent.stop(e);
                     if(L.DomUtil.hasClass(e.target, 'clickable')){
                         if(e.target.nodeName === 'INPUT'){
@@ -1272,7 +1339,7 @@
                 selected = '',
                 content = [];
 
-            for(c in colors){
+            for(var c in colors){
                 selected = colors[c] === this.options.color ? 'paint-color-selected' : '';
                 content.push('<li class="paint-color clickable '+selected+'" color="'+colors[c]+'"><span class="clickable" style="background-color: '+colors[c]+';"></span></li>');
             }
@@ -1292,7 +1359,7 @@
                 selected = '',
                 content = [];
 
-            for(c in colors){
+            for(var c in colors){
                 selected = colors[c] === this.options.fillColor ? 'paint-color-selected' : '';
                 content.push('<li class="paint-color clickable '+selected+'" color="'+colors[c]+'"><span class="clickable" style="background-color: '+colors[c]+';"></span></li>');
             }
@@ -1312,7 +1379,7 @@
                 selected = '',
                 content = [];
 
-            for(f in flags){
+            for(var f in flags){
                 selected = this.options[flags[f]] ? 'checked' : '';
                 content.push('<div><input value="'+flags[f]+'" type="checkbox" '+selected+' class="clickable" flag="'+flags[f]+'"> Draw ' + flags[f] + '</div>');
             }
@@ -1333,7 +1400,7 @@
                 content = [],
                 y = 10;
 
-            for(d in dashes){
+            for(var d in dashes){
                 selected = this.options.dashArray === dashes[d] ? 'line-selected' : '';
                 content.push('<line class="clickable pain-lines '+selected+'" stroke-dasharray="'+dashes[d]+'" x1="10" y1="'+y+'" x2="160" y2="'+y+'" />');
                 y += 20;
@@ -1357,7 +1424,7 @@
                 step = 0,
                 caps = '';
 
-            for(f in flags){
+            for(var f in flags){
                 if(flags[f] === 'weight'){
                     max = 10;
                     step = 1;
