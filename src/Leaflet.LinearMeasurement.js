@@ -12,6 +12,7 @@
 
       onRenderNode: function(latLng, options, layer){
           if(!this.rulerEnable) return;
+
           var label = options.label,
               type = options.type,
               color = this.options.color,
@@ -29,8 +30,10 @@
                 html: '<span style="color: '+color+';">'+label+'</span>'
             });
 
+            var m = L.marker(p_latLng, { icon: cicon, type: type });
+
             options.icon = cicon;
-            options.marker = L.marker(p_latLng, { icon: cicon, type: type }).addTo(layer);
+            options.marker = m.addTo(layer);
             options.label = label;
           }
       },
@@ -43,13 +46,30 @@
 
       onDraw: function(e, multi, layer){
           if(!this.rulerEnable) return;
-          this.drawTooltip(e);
+          this.drawTooltip(e.latlng, multi, layer);
           this.drawRuler();
       },
 
       onRedraw: function(layer, multi, poly){
           if(!this.rulerEnable) return;
           this.drawRulerLines(layer, multi, poly);
+          var latlng;
+
+          var latlngs = multi.getLatLngs();
+
+          if(latlngs.length){
+            if( Object.prototype.toString.call( latlngs ) === '[object Array]' ) {
+                latlng = latlngs[latlngs.length-1];
+
+            } else {
+                latlng = latlngs[latlngs.length-1];
+            }
+          }
+
+          if(latlng && !this.layer){
+            this.total = null;
+            this.drawTooltip(latlng, multi, layer);
+          }
       },
 
       onDblClick: function(e){
@@ -210,7 +230,7 @@
               label = (q + ' ' + layer.measure.unit);
 
               if(q) {
-                  this.renderCircle(latlng, 0, layer, multi ? 'fixed' : 'tmp', label);
+                  this.renderCircle(latlng, layer, (multi ? 'fixed' : 'tmp'), label, false, false);
               }
 
               this.last = t;
@@ -226,12 +246,14 @@
           return { scalar: s, unit: u };
       },
 
-      getSum: function(){
+      getSum: function(latLngs){
           this.sum = 0;
 
+          latLngs = this.latlngsList;
+
           var o;
-          for(var l in this.latlngsList){
-              o = this.latlngsList[l];
+          for(var l in latLngs){
+              o = latLngs[l];
               this.sum += o[0].distanceTo(o[1])/this.UNIT_CONV;
           }
 
@@ -254,12 +276,34 @@
           return parseInt(s) ? (s + ' ' + this.measure.unit) : '';
       },
 
-      drawTooltip: function(e){
+      drawTooltip: function(latlng, multi, layer){
+          var latLngs = multi ? multi.getLatLngs() : [];
+
+          var sum = 0, prev;
+
+          layer = layer || this.layer;
+
+          if(latLngs.length){
+            for(var l in latLngs){
+                o = latLngs[l];
+                if(prev){
+                  sum += prev.distanceTo(o)/this.UNIT_CONV;
+                }
+                prev = latLngs[l];
+            }
+          } else {
+            sum = this.sum;
+          }
+
           /* Distance in miles/meters */
-          this.distance = parseFloat(this.prevLatlng.distanceTo(e.latlng))/this.UNIT_CONV;
+          if(this.prevLatlng){
+            this.distance = parseFloat(this.prevLatlng.distanceTo(latlng))/this.UNIT_CONV;
+          } else {
+            this.distance = 0;
+          }
 
           /* scalar and unit */
-          this.measure = this.formatDistance(this.distance + this.sum, 2);
+          this.measure = this.formatDistance(this.distance + sum, 2);
 
           /* tooltip with total distance */
           var label = this.measure.scalar + ' ' + this.measure.unit,
@@ -268,15 +312,15 @@
           if(!this.total){
               this.totalIcon = L.divIcon({ className: 'total-popup', html: html });
 
-              this.total = L.marker(e.latlng, {
+              this.total = L.marker(latlng, {
                   icon: this.totalIcon,
                   clickable: true,
                   total: true
-              }).addTo(this.layer);
+              }).addTo(layer);
 
           } else {
               this.totalIcon = L.divIcon({ className: 'total-popup', html: html });
-              this.total.setLatLng(e.latlng);
+              this.total.setLatLng(latlng);
               this.total.setIcon(this.totalIcon);
           }
       },
