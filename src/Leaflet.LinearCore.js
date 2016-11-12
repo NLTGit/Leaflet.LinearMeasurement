@@ -128,7 +128,6 @@
 
             } else {
                 this.enableNode();
-
             }
 
             this.mainLayer = L.featureGroup();
@@ -188,6 +187,8 @@
                     map.setView(selected.getBounds().getCenter());
                 }
             });
+
+            map.on('mousemove', this.getMouseMoveHandler, this);
 
             this.plotGeoJsons();
         },
@@ -270,8 +271,9 @@
                     measure: layer.measure,
                     separation: layer.separation,
                     hidden: false,
-                    description: '... temp string. This would be provided by user.',
-                    name: ('Name ' + id),
+                    description: layer.description,
+                    name: layer.title,
+                    type: layer.options.type
                 },
                 features: features
             };
@@ -319,7 +321,9 @@
                     description: props.description,
                     name: props.name,
                     measure: props.measure,
-                    separation: props.separation
+                    separation: props.separation,
+                    type: props.type,
+                    complete: true
                 }).addTo(this.mainLayer);
 
                 multi = null;
@@ -329,6 +333,7 @@
                 gLayer.multi = multi;
                 gLayer.measure = gLayer.options.measure;
                 gLayer.separation = gLayer.options.separation;
+                gLayer.type = gLayer.options.type;
 
                 if(multi){
                     me.onRedraw(gLayer, multi);
@@ -340,9 +345,11 @@
 
         initLayer: function(){
             this.layer = L.geoJson();
+            this.layer.options.type = this.options.type;
+            this.layer.options.title = 'Untitled';
+            this.layer.options.description = '...';
             this.layer.addTo(this.mainLayer);
             this.layer.on('selected', this.onSelect);
-            this._map.on('mousemove', this.getMouseMoveHandler, this);
             this.anodes = this.fillAllnodes(this.layer);
         },
 
@@ -382,8 +389,6 @@
                     L.DomUtil.remove(this[features[i]]);
                 }
             }
-
-            this._map.off('mousemove', this.getMouseMoveHandler, this);
 
             this.layer = null;
             this.originalLatLng = null;
@@ -565,7 +570,6 @@
 
         displayNode: function(e, isSnapping){
             var me = this,
-                t = 200,
                 target = e.originalEvent.target;
 
             if(isSnapping){
@@ -588,7 +592,7 @@
                 me.doRenderNode(e, isSnapping);
 
                 me._map.on('mousemove', me.getMouseMoveHandler, me);
-            }, t);
+            }, 200);
         },
 
         doRenderNode: function(e, isSnapping){
@@ -663,8 +667,9 @@
         },
 
         getMouseMoveHandler: function(e){
-            if(this.prevLatlng && this.options.shape > 1 && !this.nodeEnable){
+            var me = this;
 
+            if(this.prevLatlng && this.options.shape > 1 && !this.nodeEnable){
                 if(this.nearLatLng && !this.nearLatLng.equals(e.latlng, 0.003)){
                     this.nearLatLng = null;
 
@@ -686,23 +691,30 @@
                     this.poly = this.renderPolyline(this.latlngs, this.layer);
                 } else {
                     this.poly.setLatLngs(this.latlngs);
+                    this.onDraw(e, this.multi, this.layer, this.poly);
                 }
 
-                this.onDraw(e);
+                this.onDraw(e, this.multi, this.layer, this.poly);
             }
         },
 
         getMouseDblClickHandler: function(e){
-            var me = this;
+            var me = this,
+                layer = this.layer,
+                multi = this.multi;
 
             if(this.options.shape > 1){
                 this.doRenderNode(e);
-                this.onDblClick(e);
+                this.onDblClick(e, layer);
             }
+
+            me.layer.type = me.options.type;
 
             me.enableShapeDrag(me.layer);
 
             me.persistGeoJson(me.layer);
+
+            //me.onRedraw(layer, multi);
 
             me.reset(e);
         },
@@ -750,6 +762,7 @@
                 m,
                 i = null,
                 total = layer.total,
+                type = layer.options.type || 'line',
                 nodes = [],
                 onodes = [],
                 pos;
@@ -761,6 +774,10 @@
                     nodes.push(L.latLng(l.getLatLng()));
                 }
             });
+
+            if(!m){
+                type = 'node';
+            }
 
             onodes = me.fillOnodes(layer);
             me.zeroNodes(nodes, onodes);
@@ -817,10 +834,10 @@
             return false;
         },
 
-        getSelectedNode: function(e, latlngs){
-            for(var ll in latlngs){
-                if(latlngs[ll].equals && latlngs[ll].equals(e.latlng, 0.005)){
-                    return latlngs[ll];
+        getSelectedNode: function(e, onodes){
+            for(var o in onodes){
+                if(e.latlng.equals(onodes[o], 0.005)){
+                    return onodes[o];
                 }
             }
         },
@@ -829,20 +846,24 @@
             var me = this,
                 map = this._map,
                 total = layer.total,
+                type = layer.options.type || 'line',
                 selectedNode = null,
                 nearLatLng,
                 d, delta,
                 nearings = [],
                 onodes = [],
-                type = me.options.type,
-                anodes = [];
+                anodes = [],
+                pos;
 
             if(multi){
                 multi.nodes = nodes;
+
             } else {
+                type = 'node';
                 layer.eachLayer(function(m){
                     if(m.options.type === 'node'){
                         selectedNode = { node: m };
+                        return;
                     }
                 });
             }
@@ -870,20 +891,16 @@
                             latlngs = [];
 
                         if(type === 'polygon'){
-                            for(var p in positions){
-                                for(var ll in positions[p]){
-                                    latlngs.push(positions[p][ll]);
-                                }
-                            }
-                            selectedNode = me.getSelectedNode(e, latlngs);
+                            selectedNode = me.getSelectedNode(e, onodes);
                         } else {
-                            selectedNode = me.getSelectedNode(e, positions);
+                            selectedNode = me.getSelectedNode(e, onodes);
                         }
                     }
 
                     layer.nodedrag = true;
 
                     anodes = me.fillAllnodes(layer);
+                    pos = map.latLngToContainerPoint(e.latlng);
                 }
             });
 
@@ -892,12 +909,18 @@
                     d = e.latlng;
                     delta = 0;
 
+                    if(type === 'node'){
+                        for(var o in onodes){
+                            me.setNodePosition(onodes[o], pos, d);
+                        }
+                        return;
+                    }
+
                     if(me.nodedragEnable){
                         if(selectedNode){
 
                             if(nearLatLng && !nearLatLng.equals(d, 0.003)){
                                 nearLatLng = null;
-
                             } else {
                                 nearLatLng = me.getNearestNode(e, anodes);
                             }
@@ -923,8 +946,8 @@
                     } else if(multi && me.rotateEnable){
                         delta = me.getRotationAngleDelta(d, i, centroid, dxi, dyi);
 
-                        for(var o in onodes){
-                            me.rotateNode(onodes[o], centroid, delta);
+                        for(var oo in onodes){
+                            me.rotateNode(onodes[oo], centroid, delta);
                         }
 
                         if(total){
@@ -1046,13 +1069,13 @@
 
         onRenderNode: function(latLng, options, layer){},
 
-        onDraw: function(e){},
+        onDraw: function(e, multi, layer, poly){},
 
         onRedraw: function(layer, multi, poly){},
 
         onClick: function(e){},
 
-        onDblClick: function(e){},
+        onDblClick: function(e, layer){},
 
         onAdded: function(){},
 
@@ -1150,6 +1173,7 @@
 
         enableRuler: function(){
             this.enableFeature('ruler', false, true);
+            this.enableFeature('line', false);
         },
 
         disableRuler: function(){
@@ -1272,8 +1296,10 @@
                     L.DomEvent.stop(e);
 
                     if(L.DomUtil.hasClass(e.target, 'clickable')){
-                        var parent = e.target.parentElement,
+                        var parent = e.target.nodeName === 'svg' ? e.target : e.target.parentElement,
                             children = parent.childNodes;
+
+                        var h = Math.round((e.offsetY-10) / 20);
 
                         for(var n in children){
                             if(me.isElement(children[n]) || children[n].nodeName){
@@ -1281,8 +1307,12 @@
                             }
                         }
 
-                        L.DomUtil.addClass(e.target, 'line-selected');
-                        me.options.dashArray = e.target.getAttribute('stroke-dasharray').replace(/,/g, '');
+                        var target = children[h];
+
+                        if(target){
+                          L.DomUtil.addClass(children[h], 'line-selected');
+                          me.options.dashArray = children[h].getAttribute('stroke-dasharray').replace(/,/g, '');
+                        }
                     }
                 });
             });
@@ -1290,17 +1320,41 @@
             this.buildPaneSection('opacity', function(){
                 me.paintOpacity.addEventListener('mousedown', function(e){
                     L.DomEvent.stop(e);
+                    me.slidemove = true;
+                });
+
+                me.paintOpacity.addEventListener('mousemove', function(e){
+                    L.DomEvent.stop(e);
+                    if(me.slidemove){
+                      me.moveSlider(e);
+                    }
+                });
+
+                me.paintOpacity.addEventListener('mouseup', function(e){
+                    me.slidemove = false;
+                    L.DomEvent.stop(e);
+                    me.moveSlider(e);
                 });
 
                 me.paintOpacity.addEventListener('click', function(e){
                     L.DomEvent.stop(e);
-                    if(L.DomUtil.hasClass(e.target, 'clickable')){
-                        if(e.target.nodeName === 'INPUT'){
-                            me.options[e.target.getAttribute('flag')] = e.target.value;
-                        }
-                    }
+                    me.moveSlider(e);
                 });
             });
+        },
+
+        moveSlider: function(e){
+            var me = this;
+            if(L.DomUtil.hasClass(e.target, 'clickable')){
+                if(e.target.nodeName === 'INPUT'){
+                    var v = (e.offsetX / e.target.clientWidth);
+                    if(e.target.getAttribute('step') == '1'){
+                      v *= 10;
+                    }
+                    e.target.value = v;
+                    me.options[e.target.getAttribute('flag')] = e.target.value;
+                }
+            }
         },
 
         buildPaneHeader: function(){
@@ -1314,6 +1368,7 @@
             this.paintPaneHeader.innerHTML = header;
 
             this.paintPaneHeader.addEventListener('click', function(e){
+                L.DomEvent.stop(e);
                 if(e.target.nodeName === 'I'){
                     me.disablePaint();
                 }
@@ -1408,8 +1463,8 @@
 
             var html = [
                 '<span class="section-header">Dash Array</span>',
-                '<svg class="section-body" width="200" height="200" viewPort="0 0 200 300" version="1.1" xmlns="http://www.w3.org/2000/svg">',
-                content.join(''),
+                '<svg class="section-body clickable" width="170" height="200" viewPort="0 0 200 160" version="1.1" xmlns="http://www.w3.org/2000/svg">',
+                  content.join(''),
                 '</svg>'
             ].join('');
 

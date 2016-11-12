@@ -16,14 +16,6 @@ var cost_underground = 12.55,
         return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     };
 
-/*var Core = L.Control.LinearMeasurement.extend({});
-
-map.addControl(new Core({
-  color: '#FF0080',
-  type: 'polygon'
-}));*/
-
-
 var Core = L.Control.LinearMeasurement.extend({
     onSelect: function(e){
 
@@ -44,11 +36,13 @@ var Core = L.Control.LinearMeasurement.extend({
             total_underground: numberWithCommas(L.Util.formatNum(cost_underground * distance, 2))
         };
 
-        var content = L.Util.template(html, data),
-            popup = L.popup().setContent(content);
+        if(distance){
+          var content = L.Util.template(html, data),
+              popup = L.popup().setContent(content);
 
-        e.total_label.bindPopup(popup, { offset: [45, 0] });
-        e.total_label.openPopup();
+          e.total_label.bindPopup(popup, { offset: [45, 0] });
+          e.total_label.openPopup();
+        }
     }
 });
 

@@ -71,6 +71,52 @@
     padding-left: 15px;
     margin-top: -10px !important;
     background-color: transparent;
+    padding: 0px 10px 10px 10px;
+    .dialog {
+      padding: 10px;
+      background-color: whitesmoke;
+      border: 1px silver solid;
+      border-radius: 4px;
+      position:absolute;
+      margin-left: 10px;
+      margin-top: -10px;
+
+      .total-popup-content {
+          padding: 1px 7px;
+          background-color: #999;
+          border-radius: 20px;
+          color: white;
+          font-weight: bold;
+          white-space: nowrap;
+          margin-left: auto;
+          width: 6px;
+          position: absolute;
+          right: 3px;
+          top: 4px;
+          svg {
+            left: -3px !important;
+          }
+      }
+
+      .field-wrapper {
+        .label {
+          font-family: sans-serif;
+          font-size: 12px;
+          color: #444;
+        }
+        input  {
+          border: 1px silver solid;
+          width: 125px;
+          margin-bottom: 15px;
+        }
+        textarea {
+          resize: none;
+          height: 50px;
+          width: 125px;
+          border: 1px silver solid;
+        }
+      }
+    }
 }
 
 .total-popup-content {
@@ -80,7 +126,7 @@
     color: white;
     font-weight: bold;
     white-space: nowrap;
-    text-align: center;
+    text-align: right;
     .poly-close {
         display:none;
         &:hover {
@@ -142,10 +188,15 @@
     left: 45px;
     top: 10px;
 
+    * {
+      box-sizing: initial;
+      -webkit-box-sizing: initial;
+    }
+
     .paint-pane-header {
         height: 20px;
         padding: 2px 6px;
-        line-height: 20px;
+        line-height: 19px;
         border-bottom: 1px silver solid;
         cursor: move;
         span {
@@ -175,6 +226,7 @@
         padding: 10px;
         border-bottom: 1px silver solid;
         border-top: 1px white solid;
+
         .section-header {
           color: #333;
           font-weight: bold;
@@ -184,6 +236,7 @@
         .section-body {
           padding: 0px;
           margin: 3px;
+          cursor: pointer;
           line {
             stroke: black;
             stroke-width: 2;

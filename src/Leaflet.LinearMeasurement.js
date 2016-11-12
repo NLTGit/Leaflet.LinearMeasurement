@@ -40,55 +40,72 @@
 
         onClick: function(e){
             if(!this.rulerEnable) return;
-            this.cleanUpMarkers(true);
+            this.cleanUpMarkers(true, this.layer);
             this.fixedLast = this.last;
         },
 
-        onDraw: function(e, multi, layer){
-            if(!this.rulerEnable) return;
+        onDraw: function(e, multi, layer, poly){
+            this.clearAll(layer);
+
+            if(this.rulerEnable) {
+              this.configRuler(layer);
+              this.drawRulerLines(layer, multi, poly);
+            }
+
             this.drawTooltip(e.latlng, multi, layer);
-            this.drawRuler();
         },
 
         onRedraw: function(layer, multi, poly){
-            if(!this.rulerEnable) return;
-            this.drawRulerLines(layer, multi, poly);
-            var latlng;
+            if(this.rulerEnable && layer.measure) {
+              this.configRuler(layer);
+              this.drawRulerLines(layer, multi, poly);
+            }
 
-            var latlngs = multi.getLatLngs();
+            var latlng,
+                latlngs = multi.getLatLngs();
 
             if(latlngs.length){
                 if( Object.prototype.toString.call( latlngs ) === '[object Array]' ) {
                     latlng = latlngs[latlngs.length-1];
-
                 } else {
                     latlng = latlngs[latlngs.length-1];
                 }
             }
 
-            if(latlng && !this.layer){
-                this.drawTooltip(latlng, multi, layer);
-            }
+            this.drawTooltip(latlng, multi, layer);
         },
 
-        onDblClick: function(e){
-            if(!this.rulerEnable) return;
-            var me = this,
-                layer = this.layer;
-
-            if(!layer.total){
-                return;
-            }
+        onDblClick: function(e, layer){
+            var me = this;
 
             L.DomEvent.stop(e);
 
-            var workspace = this.layer,
+            var workspace = layer,
                 map = this._map,
                 label = this.measure.scalar + ' ' + this.measure.unit + ' ',
                 total_scalar = this.measure.unit === this.SUB_UNIT ? this.measure.scalar/this.UNIT_CONV : this.measure.scalar,
-                total_latlng = layer.total.getLatLng(),
-                total_label = layer.total,
-                html = [
+                title = layer.options.title,
+                description = layer.options.description,
+
+                dialog = [
+                  '<div class="dialog">',
+                  ' <div class="total-popup-content">',
+                  '  <svg class="close" viewbox="0 0 45 35">',
+                  '   <path style="stroke: '+this.options.contrastingColor+'" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
+                  '  </svg>',
+                  ' </div>',
+                  ' <div class="field-wrapper">',
+                  '  <span class="label">Title: </span>',
+                  '  <input type="text" value="'+title+'" />',
+                  ' </div>',
+                  ' <div class="field-wrapper">',
+                  '  <span class="label">Description: </span>',
+                  '  <textarea type="text">'+description+'</textarea>',
+                  ' </div>',
+                  '</div>'
+                ].join(''),
+
+                baloon = [
                     '<div class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label,
                     '  <svg class="close" viewbox="0 0 45 35">',
                     '   <path style="stroke: '+this.options.contrastingColor+'" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
@@ -96,8 +113,22 @@
                     '</div>'
                 ].join('');
 
+            var html = this.rulerEnable && layer.measure ? baloon : dialog;
+
+            layer.removeLayer(layer.total);
+
             layer.totalIcon = L.divIcon({ className: 'total-popup', html: html });
-            layer.total.setIcon(layer.totalIcon);
+
+            layer.total = L.marker(e.latlng, {
+                icon: layer.totalIcon,
+                clickable: true,
+                total: true,
+                type: 'tmp',
+            }).addTo(layer);
+
+            layer.options.complete = true;
+
+            var total_label = layer.total
 
             workspace.total = layer.total;
 
@@ -114,7 +145,6 @@
                 if(L.DomUtil.hasClass(e.originalEvent.target, 'close')){
                     me._map.fire('shape_delete', { id: workspace.options.id });
                     me._map.fire('shape_changed');
-
                 } else {
                     workspace.fireEvent('selected', data);
                 }
@@ -166,9 +196,7 @@
             }
         },
 
-        cleanUpMarkers: function(fixed){
-            layer = this.layer;
-
+        cleanUpMarkers: function(fixed, layer){
             if(layer){
                 layer.eachLayer(function(l){
                     if(l.options && l.options.type === 'tmp'){
@@ -211,12 +239,18 @@
             }
 
             var t = (sum * unit) + dis,
-                qu = sum * unit;
+                qu = sum * unit,
+                sep = layer.separation,
+                un = layer.measure.unit;
+
+                if(layer.measure.unit === 'ft' && sep < 100){
+                  sep = 100;
+                }
 
             for(var q = Math.floor(qu); q < t; q++){
                 ratio = (t-q) / dis;
 
-                if(q % layer.separation || q < qu) {
+                if(q % sep || q < qu) {
                     continue;
                 }
 
@@ -229,7 +263,7 @@
 
                 latlng = this._map.containerPointToLatLng(p);
 
-                label = (q + ' ' + layer.measure.unit);
+                label = (q + ' ' + un);
 
                 if(q) {
                     this.renderCircle(latlng, layer, (multi ? 'fixed' : 'tmp'), label, false, false);
@@ -302,12 +336,56 @@
           return sum;
         },
 
+        configRuler: function(layer){
+            var ds = this.measure.scalar,
+                digits = parseInt(ds).toString().length,
+                num = Math.pow(10, digits),
+                current_separation = ds > (num/2) ? (num/10) : (num/20);
+
+            this.separation = current_separation;
+            layer.separation = current_separation;
+            layer.measure = this.measure;
+        },
+
+        drawRulerLines: function(layer, multi, poly){
+            var latlngs = multi ? multi.getLatLngs() : [],
+                prev,
+                dimension = 0;
+
+            for(var s in latlngs){
+                if( Object.prototype.toString.call( latlngs[s] ) === '[object Array]' ) {
+                    prev = latlngs[s];
+
+                    var p;
+
+                    for(var t in prev){
+                        if(p){
+                            dimension += this.displayMarkers.apply(this, [[p, prev[t]], true, dimension, layer]);
+                        }
+                        p = prev[t];
+                    }
+
+                    if(!poly){
+                        dimension += this.displayMarkers.apply(this, [[p, prev[0]], true, dimension, layer]);
+                    }
+
+                } else {
+                    if(prev) {
+                        dimension += this.displayMarkers.apply(this, [[prev, latlngs[s]], true, dimension, layer]);
+                    }
+                    prev = latlngs[s];
+                }
+            }
+
+            if(poly){
+                var polyLatLngs = poly.getLatLngs();
+                this.displayMarkers.apply(this, [polyLatLngs, false, dimension, layer]);
+            }
+        },
+
         drawTooltip: function(latlng, multi, layer){
             var latLngs = multi ? multi.getLatLngs() : [];
-
             var sum = 0, prev, o;
-
-            layer = layer || this.layer;
 
             sum = this.getStaticSum(latLngs);
 
@@ -325,71 +403,21 @@
             /* scalar and unit */
             this.measure = this.formatDistance(this.distance + sum, 2);
 
-            /* tooltip with total distance */
-            var label = this.measure.scalar + ' ' + this.measure.unit,
-                html = '<span class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label + '</span>';
-
-            if(!layer.total){
-                layer.totalIcon = L.divIcon({ className: 'total-popup', html: html });
-
-                layer.total = L.marker(latlng, {
-                    icon: layer.totalIcon,
-                    clickable: true,
-                    total: true
-                }).addTo(layer);
-
+            if(layer.options.complete){
+              this.onDblClick({ latlng: latlng }, layer);
             } else {
-                layer.totalIcon = L.divIcon({ className: 'total-popup', html: html });
+              /* tooltip with total distance */
+              var label = this.measure.scalar + ' ' + this.measure.unit,
+                  html = '<span class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label + '</span>';
 
-                layer.total.setLatLng(latlng);
-                layer.total.setIcon(layer.totalIcon);
-            }
-        },
+              layer.totalIcon = L.divIcon({ className: 'total-popup', html: html });
 
-        drawRulerLines: function(layer, multi, poly){
-            this.clearAll(layer);
-
-            var latlngs = multi ? multi.getLatLngs() : [],
-                prev,
-                dimension = 0;
-
-            for(var s in latlngs){
-                if(prev) {
-                    dimension += this.displayMarkers.apply(this, [ [prev, latlngs[s]], true, dimension, layer]);
-                }
-                prev = latlngs[s];
-            }
-
-            if(poly){
-                this.displayMarkers.apply(this, [poly.getLatLngs(), false, dimension, layer]);
-            }
-        },
-
-        drawRuler: function(){
-            /* Rules for separation using only distance criteria */
-            var ds = this.measure.scalar,
-                old_separation = this.separation,
-                digits = parseInt(ds).toString().length,
-                num = Math.pow(10, digits),
-                real = ds > (num/2) ? (num/10) : (num/20),
-                multi = this.multi,
-                layer = this.layer,
-                poly = this.poly;
-
-            this.separation = real;
-            layer.separation = real;
-            layer.measure = this.measure;
-            this.getSum();
-
-            /* If there is a change in the segment length we want to re-space
-             the dots on the multi line */
-            if(old_separation !== this.separation && this.fixedLast && multi){
-                this.drawRulerLines(layer, multi, poly);
-                /* Review that the dots are in correct units */
-                this.convertDots();
-            } else {
-                this.cleanUpMarkers();
-                this.displayMarkers.apply(this, [poly.getLatLngs(), false, this.sum, layer]);
+              layer.total = L.marker(latlng, {
+                  icon: layer.totalIcon,
+                  clickable: true,
+                  total: true,
+                  type: 'tmp'
+              }).addTo(layer);
             }
         },
 
