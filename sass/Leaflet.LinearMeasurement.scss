@@ -83,7 +83,7 @@
 
       .total-popup-content {
           padding: 1px 7px;
-          background-color: #999;
+          background-color: transparent;
           border-radius: 20px;
           color: white;
           font-weight: bold;
@@ -108,12 +108,14 @@
           border: 1px silver solid;
           width: 125px;
           margin-bottom: 15px;
+          text-indent: 3px;
         }
         textarea {
           resize: none;
           height: 50px;
           width: 125px;
           border: 1px silver solid;
+          padding: 3px;
         }
       }
     }
@@ -126,7 +128,7 @@
     color: white;
     font-weight: bold;
     white-space: nowrap;
-    text-align: right;
+    text-align: left;
     .poly-close {
         display:none;
         &:hover {
@@ -153,12 +155,34 @@
         stroke-linecap: round;
         stroke-width: 7;
       }
+      .dialog-close {
+        stroke: #999;
+      }
       &:hover {
           opacity: 0.7;
       }
       &:active {
           opacity: 0.3;
       }
+    }
+    .tip-layer {
+      width: auto;
+      min-width: 50px;
+      display: inline-block;
+    }
+    .tip-input {
+      position: absolute;
+      width: 50px;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 0px;
+      text-indent: 0px;
+      outline: none !important;
+      font: 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      color: white;
+      line-height: 2px;
+      top: 1px;
     }
 }
 
@@ -173,7 +197,7 @@
     white-space: nowrap;
 }
 
-.not-visible {
+.hidden-el {
     visibility: hidden;
 }
 

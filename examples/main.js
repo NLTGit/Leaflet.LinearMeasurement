@@ -36,12 +36,52 @@ var Core = L.Control.LinearMeasurement.extend({
             total_underground: numberWithCommas(L.Util.formatNum(cost_underground * distance, 2))
         };
 
-        if(distance){
-          var content = L.Util.template(html, data),
-              popup = L.popup().setContent(content);
+        if(e.rulerOn){
+            var content = L.Util.template(html, data),
+                popup = L.popup().setContent(content);
 
-          e.total_label.bindPopup(popup, { offset: [45, 0] });
-          e.total_label.openPopup();
+            e.total_label.bindPopup(popup, { offset: [45, 0] });
+            e.total_label.openPopup();
+
+        } else {
+          var layer = e.workspace,
+              title = layer.options.title,
+              description = layer.options.description,
+              dialog = [
+                '<div class="dialog">',
+                ' <div class="total-popup-content">',
+                '  <svg viewbox="0 0 45 35">',
+                '   <path class="dialog-close close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
+                '  </svg>',
+                ' </div>',
+                ' <div class="field-wrapper">',
+                '  <span class="label">Title: </span>',
+                '  <input type="text" value="'+title+'" />',
+                ' </div>',
+                ' <div class="field-wrapper">',
+                '  <span class="label">Description: </span>',
+                '  <textarea type="text">'+description+'</textarea>',
+                ' </div>',
+                '</div>'
+              ].join('');
+
+              //layer.removeLayer(layer.total);
+
+              /*
+
+              layer.totalIcon = L.divIcon({ className: 'total-popup', html: dialog });
+
+              layer.total = L.marker(e.latlng, {
+                  icon: layer.totalIcon,
+                  clickable: true,
+                  total: true,
+                  type: 'tmp',
+              }).addTo(layer);
+
+              layer.total.on('click', function(e){
+                L.DomEvent.stop(e);
+              });
+              */
         }
     }
 });

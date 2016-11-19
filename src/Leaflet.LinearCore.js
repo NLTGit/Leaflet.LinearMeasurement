@@ -42,17 +42,30 @@
                 default:
             }
 
+            map.on('linear_feature_on', function(data){
+                if(!me.active){
+                    me.active = true;
+                    me.initRuler(container);
+                    L.DomUtil.addClass(me.link, 'icon-active');
+                    L.DomUtil.addClass(map_container, 'ruler-map');
+                }
+            });
+
             L.DomEvent.on(me.link, 'click', L.DomEvent.stop).on(me.link, 'click', function(){
+
                 if(L.DomUtil.hasClass(me.link, 'icon-active')){
+                    me.active = false;
                     me.resetRuler(true);
                     L.DomUtil.removeClass(me.link, 'icon-active');
                     L.DomUtil.removeClass(map_container, 'ruler-map');
 
                 } else {
+                    me.active = true;
                     me.initRuler(container);
                     L.DomUtil.addClass(me.link, 'icon-active');
                     L.DomUtil.addClass(map_container, 'ruler-map');
                 }
+
             });
 
             if(this.options.color && this.options.color.indexOf('#') === -1){
@@ -165,7 +178,6 @@
                 } else if(!data.hidden){
                     me.plotGeoJsons(id);
                 }
-
             });
 
             map.on('shape_delete', function(data){
@@ -185,6 +197,24 @@
                 if(selected){
                     me.selectedLayer = selected;
                     map.setView(selected.getBounds().getCenter());
+                }
+            });
+
+            map.on('shape_update', function(data){
+                var id = data.id,
+                    geo = me.getGeoJson(id),
+                    selected = me.getLayerById(id);
+
+                me.mainLayer.removeLayer(selected);
+
+                geo.properties.hidden = data.hidden;
+                geo.properties.name = data.name;
+                geo.properties.description = data.description;
+
+                me.updateGeoJson(geo);
+
+                if(!data.hidden){
+                    me.plotGeoJsons(id);
                 }
             });
 
@@ -241,7 +271,7 @@
             this.saveGeoJsons(geos);
         },
 
-        persistGeoJson: function(layer){
+        persistGeoJson: function(layer, simple){
             var me = this,
                 geo, g,
                 features = [],
@@ -268,12 +298,13 @@
                 type: "FeatureCollection",
                 properties: {
                     id: id,
-                    measure: layer.measure,
-                    separation: layer.separation,
+                    measure: simple ? false : layer.measure,
+                    separation: simple ? false : layer.separation,
                     hidden: false,
                     description: layer.description,
                     name: layer.title,
-                    type: layer.options.type
+                    type: layer.options.type,
+                    simple: simple || !this.rulerEnable
                 },
                 features: features
             };
@@ -319,11 +350,12 @@
                     id: props.id,
                     hidden: props.hidden,
                     description: props.description,
-                    name: props.name,
+                    title: props.name,
                     measure: props.measure,
                     separation: props.separation,
                     type: props.type,
-                    complete: true
+                    complete: true,
+                    simple: props.simple
                 }).addTo(this.mainLayer);
 
                 multi = null;
@@ -334,6 +366,7 @@
                 gLayer.measure = gLayer.options.measure;
                 gLayer.separation = gLayer.options.separation;
                 gLayer.type = gLayer.options.type;
+                gLayer.title = gLayer.options.title;
 
                 if(multi){
                     me.onRedraw(gLayer, multi);
@@ -714,8 +747,6 @@
 
             me.persistGeoJson(me.layer);
 
-            //me.onRedraw(layer, multi);
-
             me.reset(e);
         },
 
@@ -818,7 +849,7 @@
                     me.dragging = false;
                     i = e.latlng;
                     me.zeroNodes(nodes, onodes);
-                    me.persistGeoJson(layer);
+                    me.persistGeoJson(layer, layer.options.simple);
                 }
             }, layer);
 
@@ -968,7 +999,7 @@
                     i = e.latlng;
                     me.zeroNodes(nodes, onodes);
                     me.dragging = false;
-                    me.persistGeoJson(layer);
+                    me.persistGeoJson(layer, layer.options.simple);
                 }
             });
         },
@@ -1208,7 +1239,7 @@
             this.enableFeature('paint', false, true);
 
             if(this.paintPane){
-                L.DomUtil.removeClass(this.paintPane, 'not-visible');
+                L.DomUtil.removeClass(this.paintPane, 'hidden-el');
             } else {
                 this.buildPaintPane();
             }
@@ -1217,7 +1248,7 @@
         disablePaint: function(){
             this.disableFeature('paint');
             if(this.paintPane){
-                L.DomUtil.addClass(this.paintPane, 'not-visible');
+                L.DomUtil.addClass(this.paintPane, 'hidden-el');
             }
         },
 
