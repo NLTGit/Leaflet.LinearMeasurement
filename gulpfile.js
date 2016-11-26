@@ -2,6 +2,7 @@ var gulp = require('gulp');
 var clean = require('gulp-clean');
 var uglify = require('gulp-uglify');
 var sass = require('gulp-sass');
+var concat = require('gulp-concat');
 
 gulp.task('clean:dist', function () {
   return gulp.src('dist')
@@ -15,6 +16,7 @@ gulp.task('build', ['clean:dist'], function() {
         regex: /^_/
       }
     }))
+    .pipe(concat('all.js'))
     .pipe(gulp.dest('dist'));
 });
 

@@ -133,16 +133,6 @@
 
             this.iconsInitial(container);
 
-            if(this.options.type === 'line'){
-                this.enableLine();
-
-            } else if(this.options.type === 'polygon'){
-                this.enablePolygon();
-
-            } else {
-                this.enableNode();
-            }
-
             this.mainLayer = L.featureGroup();
             this.mainLayer.addTo(this._map);
 
@@ -221,6 +211,20 @@
             map.on('mousemove', this.getMouseMoveHandler, this);
 
             this.plotGeoJsons();
+        },
+
+        repaintGeoJson: function(layer){
+          if(layer){
+              var id = layer.options.id;
+
+              this.mainLayer.removeLayer(layer);
+
+              this.deleteGeoJson(id);
+
+              this.persistGeoJson(layer, layer.options.simple);
+
+              this.plotGeoJsons(id);
+          }
         },
 
         getGeoJsons: function(){
@@ -316,8 +320,6 @@
             var me = this;
 
             this.resetRuler();
-
-            this.enableRuler();
 
             var geos = this.getGeoJsons(),
                 gLayer, multi;
@@ -695,7 +697,6 @@
                 if(latlng){ return; }
             });
 
-
             return latlng;
         },
 
@@ -741,6 +742,8 @@
                 this.onDblClick(e, layer);
             }
 
+            me.selectedLayer = me.layer;
+
             me.layer.type = me.options.type;
 
             me.enableShapeDrag(me.layer);
@@ -748,43 +751,6 @@
             me.persistGeoJson(me.layer);
 
             me.reset(e);
-        },
-
-        fillOnodes: function(layer){
-            var onodes = [];
-
-            layer.eachLayer(function(m){
-                if(!m._latlngs) {
-                    var latlng = m.getLatLng();
-                    latlng.node = m;
-                    onodes.push(latlng);
-                }
-            });
-
-            return onodes;
-        },
-
-        searchForAllNodes: function(layer, myLayer, onodes){
-            if(layer == myLayer){
-                return;
-            }
-            layer.eachLayer(function(m){
-                if(m.options.type === 'node') {
-                    var latlng = m.getLatLng();
-                    latlng.node = m;
-                    onodes.push(latlng);
-                }
-            });
-        },
-
-        fillAllnodes: function(myLayer){
-            var me = this, onodes = [];
-
-            this.mainLayer.eachLayer(function(layer){
-                me.searchForAllNodes(layer, myLayer, onodes);
-            });
-
-            return onodes;
         },
 
         enableShapeDrag: function(layer){
@@ -854,23 +820,6 @@
             }, layer);
 
             this.enableShapeNodeDrag(layer, m, nodes);
-        },
-
-        getNearestNode: function(e, onodes){
-            for(var o in onodes){
-                if(onodes[o].equals(e.latlng, 0.003)){
-                    return L.latLng(onodes[o]);
-                }
-            }
-            return false;
-        },
-
-        getSelectedNode: function(e, onodes){
-            for(var o in onodes){
-                if(e.latlng.equals(onodes[o], 0.005)){
-                    return onodes[o];
-                }
-            }
         },
 
         enableShapeNodeDrag: function(layer, multi, nodes){
@@ -1004,6 +953,60 @@
             });
         },
 
+        fillOnodes: function(layer){
+            var onodes = [];
+
+            layer.eachLayer(function(m){
+                if(!m._latlngs) {
+                    var latlng = m.getLatLng();
+                    latlng.node = m;
+                    onodes.push(latlng);
+                }
+            });
+
+            return onodes;
+        },
+
+        searchForAllNodes: function(layer, myLayer, onodes){
+            if(layer == myLayer){
+                return;
+            }
+            layer.eachLayer(function(m){
+                if(m.options.type === 'node') {
+                    var latlng = m.getLatLng();
+                    latlng.node = m;
+                    onodes.push(latlng);
+                }
+            });
+        },
+
+        fillAllnodes: function(myLayer){
+            var me = this, onodes = [];
+
+            this.mainLayer.eachLayer(function(layer){
+                me.searchForAllNodes(layer, myLayer, onodes);
+            });
+
+            return onodes;
+        },
+
+        getNearestNode: function(e, onodes){
+            for(var o in onodes){
+                if(onodes[o].equals(e.latlng, 0.003)){
+                    return L.latLng(onodes[o]);
+                }
+            }
+            return false;
+        },
+
+        getSelectedNode: function(e, onodes){
+            for(var o in onodes){
+                if(e.latlng.equals(onodes[o], 0.005)){
+                    return onodes[o];
+                }
+            }
+        },
+
         zeroNodes: function(nodes, onodes){
             for(var j in nodes){
                 nodes[j].original_x = 0;
@@ -1113,7 +1116,9 @@
         onSelect: function(e){},
 
         enableFeature: function(feature, isType, isFeature){
-            if(feature != 'ruler' && feature != 'paint' && feature != 'trash'){
+            console.log(feature);
+
+            if(feature != 'ruler' && feature != 'trash'){
                 this.disableFeature('node');
                 this.disableFeature('line');
                 this.disableFeature('polygon');
@@ -1252,6 +1257,96 @@
             }
         },
 
+        onPaintChange: function(option){
+          this.affectSelectedLayer(option);
+        },
+
+        affectSelectedLayer: function(option){
+          var me = this,
+              options = { };
+
+          options[option] = me.options[option];
+
+          if(this.selectedLayer){
+
+            this.selectedLayer.eachLayer(function(layer){
+                if(layer.setStyle){
+                    layer.setStyle(options);
+
+                } else {
+                    var cicon = layer.options.icon,
+                        color = options[option],
+                        label = '';
+
+                    if(layer.options.total && option === 'color'){
+                        label = me.selectedLayer.title;
+
+                        var html = me.getIconHtml(label, color);
+                        L.setOptions(cicon, { html: html });
+                        layer.setIcon(cicon);
+
+                    } else if(layer.options.type === 'fixed' && option === 'color') {
+                        label = layer.options.label;
+
+                        var html = me.getIconLabelHtml(label, color);
+                        L.setOptions(cicon, { html: html });
+                        layer.setIcon(cicon);
+                    }
+                }
+            });
+
+            this.persistGeoJson(this.selectedLayer, this.selectedLayer.options.simple);
+          }
+        },
+
+        getIconHtml: function(label, color){
+            /* TODO: find a better solution for contrast based on background color */
+
+            var contrast = color === '#fff' ? 'black' : '#fff';
+
+            var html = [
+                '<div class="total-popup-content" style="background-color:'+color+'; color: '+contrast+';">',
+                '  <input class="tip-input hidden-el" type="text" style="color: '+contrast+'" />',
+                '  <div class="tip-layer">'+label+'</div>',
+                '  <svg class="close" viewbox="0 0 45 35">',
+                '   <path class="close" style="stroke:'+contrast+'" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
+                '  </svg>',
+                '</div>'
+            ].join('');
+
+            return html;
+        },
+
+        getIconLabelHtml: function(label, color){
+            var contrast = color === '#fff' ? 'black' : '#fff';
+
+            var html = [
+              '<span style="color: '+color+';">'+label+'</span>'
+            ].join('');
+
+            return html;
+        },
+
+        idealTextColor: function(bgColor) {
+           var nThreshold = 105,
+               components = this.getRGBComponents(bgColor),
+               bgDelta = (components.R * 0.299) + (components.G * 0.587) + (components.B * 0.114);
+
+           return ((255 - bgDelta) < nThreshold) ? "#000000" : "#ffffff";
+        },
+
+        getRGBComponents: function(color) {
+            var r = color.substring(1, 3),
+                g = color.substring(3, 5),
+                b = color.substring(5, 7);
+
+            return {
+               R: parseInt(r, 16),
+               G: parseInt(g, 16),
+               B: parseInt(b, 16)
+            };
+        },
+
         buildPaintPane: function(){
             var me = this,
                 map = this._map.getContainer();
@@ -1281,6 +1376,7 @@
 
                         L.DomUtil.addClass(parent, 'paint-color-selected');
                         me.options.color = color;
+                        me.onPaintChange('color');
                     }
                 });
             });
@@ -1303,6 +1399,7 @@
 
                         L.DomUtil.addClass(parent, 'paint-color-selected');
                         me.options.fillColor = color;
+                        me.onPaintChange('fillColor');
                     }
                 });
             });
@@ -1313,9 +1410,11 @@
                         if(e.target.nodeName === 'INPUT'){
                             if(e.target.checked){
                                 me.options[e.target.getAttribute('flag')] = true;
+                                me.onPaintChange(e.target.getAttribute('flag'));
 
                             } else {
                                 me.options[e.target.getAttribute('flag')] = false;
+                                me.onPaintChange(e.target.getAttribute('flag'));
                             }
                         }
                     }
@@ -1343,6 +1442,7 @@
                         if(target){
                           L.DomUtil.addClass(children[h], 'line-selected');
                           me.options.dashArray = children[h].getAttribute('stroke-dasharray').replace(/,/g, '');
+                          me.onPaintChange('dashArray');
                         }
                     }
                 });
@@ -1384,6 +1484,7 @@
                     }
                     e.target.value = v;
                     me.options[e.target.getAttribute('flag')] = e.target.value;
+                    me.onPaintChange(e.target.getAttribute('flag'));
                 }
             }
         },

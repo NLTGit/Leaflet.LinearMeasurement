@@ -24,13 +24,20 @@
                 label = this.calculateSum();
             }
 
+            layer.eachLayer(function(l){
+              if(l.options.type !== 'fixed'){
+                color = l.options.color;
+                return;
+              }
+            });
+
             if(label){
                 var cicon = L.divIcon({
                     className: 'total-popup-label',
-                    html: '<span style="color: '+color+';">'+label+'</span>'
+                    html: this.getIconLabelHtml(label, color)
                 });
 
-                var m = L.marker(p_latLng, { icon: cicon, type: type });
+                var m = L.marker(p_latLng, { icon: cicon, type: type, label: label });
 
                 options.icon = cicon;
                 options.marker = m.addTo(layer);
@@ -71,32 +78,32 @@
             this.drawTooltip(latlng, multi, layer);
         },
 
-        onDblClick: function(e, layer){
+        onDblClick: function(e, layer, existing){
             var me = this;
 
             L.DomEvent.stop(e);
 
-            var rerun = layer.options.simple,
+            var isRuler = existing ? !layer.options.simple : this.rulerEnable,
                 workspace = layer,
                 map = this._map,
                 label = this.measure.scalar + ' ' + this.measure.unit + ' ',
-                total_scalar = this.measure.unit === this.SUB_UNIT ? this.measure.scalar/this.UNIT_CONV : this.measure.scalar;
+                total_scalar = this.measure.unit === this.SUB_UNIT ? this.measure.scalar/this.UNIT_CONV : this.measure.scalar,
+                color = this.options.color;
 
             if(!this.rulerEnable || (layer.options.complete && layer.options.simple)){
               label = layer.options.title;
+            } else {
+              layer.title = label;
             }
 
-            var baloon = [
-                    '<div class="total-popup-content" style="background-color:'+this.options.color+';">',
-                    '  <input class="tip-input hidden-el" type="text" />',
-                    '  <div class="tip-layer">'+label+'</div>',
-                    '  <svg class="close" viewbox="0 0 45 35">',
-                    '   <path class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
-                    '  </svg>',
-                    '</div>'
-                ].join('');
+            layer.eachLayer(function(l){
+              if(l.options.type !== 'fixed'){
+                color = l.options.color;
+                return;
+              }
+            });
 
-            var html =  baloon;
+            var html =  this.getIconHtml(label, color);
 
             if(this.rulerEnable && !layer.options.simple){
               layer.measure = this.measure;
@@ -105,7 +112,7 @@
               layer.options.simple = true;
             }
 
-            layer.removeLayer(layer.total);
+            workspace.removeLayer(layer.total);
 
             layer.totalIcon = L.divIcon({ className: 'total-popup', html: html });
 
@@ -130,15 +137,24 @@
                 unit: this.UNIT_CONV,
                 sub_unit: this.SUB_UNIT_CONV,
                 workspace: workspace,
-                rulerOn: this.rulerEnable
+                rulerOn: isRuler
             };
 
             var fireSelected = function(e){
+                if(me.dragging || !layer.total._icon){
+                  return;
+                }
+
                 L.DomEvent.stop(e);
+                var map = me._map;
+
+                me.selectedLayer = workspace;
+
+                workspace.fireEvent('selected', data);
 
                 if(e.originalEvent && L.DomUtil.hasClass(e.originalEvent.target, 'close')){
-                    me._map.fire('shape_delete', { id: workspace.options.id });
-                    me._map.fire('shape_changed');
+                    map.fire('shape_delete', { id: workspace.options.id });
+                    map.fire('shape_changed');
 
                 } else {
                     var target_layer = e.target || layer;
@@ -146,8 +162,6 @@
                     if(!target_layer.options.simple) {
                       return;
                     }
-
-                    workspace.fireEvent('selected', data);
 
                     var label_field = '',
                         parent = layer.total._icon.children[0],
@@ -203,12 +217,14 @@
 
             workspace.off('click');
             workspace.on('click', fireSelected);
+            workspace.on('selected', this.onSelect);
 
-            if(!rerun){
+            /* Only fire to auto-focus newly created path */
+
+            if(!existing){
               workspace.fireEvent('click', fireSelected);
             }
 
-            workspace.fireEvent('selected', data);
         },
 
         resetRuler: function(resetLayer){
@@ -450,7 +466,7 @@
             this.measure = this.formatDistance(this.distance + sum, 2);
 
             if(layer.options.complete){
-              this.onDblClick({ latlng: latlng }, layer);
+              this.onDblClick({ latlng: latlng }, layer, true);
             } else {
               /* tooltip with total distance */
               var label = this.measure.scalar + ' ' + this.measure.unit;
@@ -459,7 +475,9 @@
                 label = layer.options.title;
               }
 
-              var html = '<span class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label + '</span>';
+              var color = this.options.color;
+
+              var html = this.getIconHtml(label, color);
 
               layer.totalIcon = L.divIcon({ className: 'total-popup', html: html });
 
