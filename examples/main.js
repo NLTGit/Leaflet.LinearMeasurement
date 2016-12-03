@@ -16,7 +16,7 @@ var cost_underground = 12.55,
         return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     };
 
-var Core = L.Control.LinearMeasurement.extend({
+var Core = L.Control.LinearCore.extend({
     onSelect: function(e){
         var distance = e.total.scalar;
 

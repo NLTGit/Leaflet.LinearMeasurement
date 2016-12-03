@@ -10,13 +10,23 @@ gulp.task('clean:dist', function () {
 });
 
 gulp.task('build', ['clean:dist'], function() {
-  return gulp.src('src/**/*.js')
+  return gulp.src([
+      'src/utils.js',    
+      'src/features/*.js',
+      'src/feature.js',
+      'src/handlers.js',
+      'src/shapes.js',
+      'src/core.js'
+    ])
+
     .pipe(uglify({
       mangleProperties: {
         regex: /^_/
       }
     }))
-    .pipe(concat('all.js'))
+
+    .pipe(concat('Leaflet.LinearMeasurement.js'))
+
     .pipe(gulp.dest('dist'));
 });
 
