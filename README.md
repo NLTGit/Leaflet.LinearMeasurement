@@ -24,15 +24,15 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
 
 <h2>Usage</h2>
 
-<pre>
+<code>
     var cost_underground = 12.55,
         cost_above_ground = 17.89,
 
         html = [
-            '<pre><table>',
+            '<table>',
             ' <tr><td class="cost_label">Cost Above Ground:</td><td class="cost_value">${total_above_ground}</td></tr>',
             ' <tr><td class="cost_label">Cost Underground:</td><td class="cost_value">${total_underground}</td></tr>',
-            '</table></pre>'
+            '</table>'
         ].join(''),
 
         numberWithCommas = function(x) {
@@ -71,7 +71,7 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
       unitSystem: 'metric',
       color: '#FF0080'
     }));
-</pre>
+</code>
 
 <h2>Requirements</h2>
 
