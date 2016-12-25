@@ -25,19 +25,20 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
 <h2>Usage</h2>
 
 <code>
-    var cost_underground = 12.55,
-        cost_above_ground = 17.89,
+    var cost_underground = 12.55;
 
-        html = [
-            '<table>',
-            ' <tr><td class="cost_label">Cost Above Ground:</td><td class="cost_value">${total_above_ground}</td></tr>',
-            ' <tr><td class="cost_label">Cost Underground:</td><td class="cost_value">${total_underground}</td></tr>',
-            '</table>'
-        ].join(''),
+    var cost_above_ground = 17.89;
 
-        numberWithCommas = function(x) {
-            return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        };
+    var html = [
+        '<table>',
+        ' <tr><td class="cost_label">Cost Above Ground:</td><td class="cost_value">${total_above_ground}</td></tr>',
+        ' <tr><td class="cost_label">Cost Underground:</td><td class="cost_value">${total_underground}</td></tr>',
+        '</table>'
+    ].join('');
+
+    var numberWithCommas = function(x) {
+        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    };
 
     var Ruler = L.Control.LinearMeasurement.extend({
         layerSelected: function(e){
