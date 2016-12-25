@@ -38,11 +38,9 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
   <p>There is the possibility to extend the plugin to handle some of the internal events: </p>
 </div>
 
-
 <code>
     var Core = L.Control.LinearCore.extend({
         onSelect: function(e){
-
             if(!e.total){
               return;
             }
@@ -90,8 +88,7 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
       unitSystem: 'imperial',
       color: '#FF0080',
       type: 'line'
-    }));
-</code>
+    }));</code>
 
 <h2>Options</h2>
 
@@ -101,8 +98,8 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
   <tr><td>color</td> <td>#4D90FE</td></tr>
   <tr><td>fillColor</td> <td>#fff</td></tr>
   <tr><td>type</td> <td>node</td></tr>
-  <tr><td>features</td> ['node', 'line', 'polygon', 'ruler', 'paint', 'drag', 'rotate', 'nodedrag', 'trash']</td></tr>
-  <tr><td>pallette</td> ['#FF0080', '#4D90FE', 'red', 'blue', 'green', 'orange', 'black']</td></tr>
+  <tr><td>features</td> <td>['node', 'line', 'polygon', 'ruler', 'paint', 'drag', 'rotate', 'nodedrag', 'trash']</td></tr>
+  <tr><td>pallette</td> <td>['#FF0080', '#4D90FE', 'red', 'blue', 'green', 'orange', 'black']</td></tr>
   <tr><td>dashArrayOptions</td> <td>['5, 5', '5, 10', '10, 5', '5, 1', '1, 5', '0.9', '15, 10, 5', '15, 10, 5, 10', '15, 10, 5, 10, 15', '5, 5, 1, 5']</td></tr>
   <tr><td>fill</td> <td>true</td></tr>
   <tr><td>stroke</td> <td>true</td></tr>
@@ -117,6 +114,7 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
 </table>
 
 <h2>Requirements</h2>
+Leaflet 1.0.0+ (may work with earlier versions)
 
 <h2>Author</h2>
 Juan Daniel Flores
