@@ -18,6 +18,11 @@ var cost_underground = 12.55,
 
 var Core = L.Control.LinearCore.extend({
     onSelect: function(e){
+
+        if(!e.total){
+          return;
+        }
+        
         var distance = e.total.scalar;
 
         if(e.total.unit === 'mi'){

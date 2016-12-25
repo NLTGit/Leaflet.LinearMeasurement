@@ -1,6 +1,6 @@
 (function(){
 
-    var mixins = [Utils, Geo, Shapes, Handlers, Features, Paint, Nodes, Measurement];
+    var mixins = [Utils, Geo, Handlers];
 
     L.Control.LinearCore = L.Control.extend({
 
@@ -19,12 +19,14 @@
             opacity: 1,
             fillOpacity: 0.5,
             radius: 3,
-            unitSystem: 'imperial'
+            unitSystem: 'imperial',
+            doubleClickSpeed: 300
         },
 
         includes: mixins,
+        tik: 0, // used to calculate double click based on doubleClickSpeed option
 
-        /* */
+        /* Control Leaflet Cycle method implemented */
 
         onAdd: function (map) {
             var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
@@ -36,6 +38,10 @@
             this.link.href = '#';
             this.link.title = '';
 
+            this.container = container;
+
+            /* listening to a global map event in order to allow external activation */
+
             map.on('linear_feature_on', function(data){
                 if(!me.active){
                     me.active = true;
@@ -44,6 +50,8 @@
                     L.DomUtil.addClass(map_container, 'ruler-map');
                 }
             });
+
+            /* Handling click event on map application icon */
 
             L.DomEvent.on(me.link, 'click', L.DomEvent.stop).on(me.link, 'click', function(){
                 if(L.DomUtil.hasClass(me.link, 'icon-active')){
@@ -60,7 +68,12 @@
                 }
             });
 
+            /* Normalize the list of colors used to render shapes */
+
             this.setUpColor();
+
+            /* onAdd is a handler (handlers.js in development) that can be
+               overriden by subclasses when plugin is initialized the first time */
 
             this.onAdded();
 
@@ -81,11 +94,37 @@
 
             this.features = this.options.features;
 
-            this.iconsInitial(container);
+            /* Initialize old version of features */
 
             this.featureList = [];
 
-            //this.featureList.push(new L.Class.Feature('node', container));
+            this.nodeFeature = new L.Class.NodeFeature(this);
+            this.featureList.push(this.nodeFeature);
+
+            this.featureList.push(new L.Class.NapFeature(this));
+
+            this.lineFeature = new L.Class.LineFeature(this);
+            this.featureList.push(this.lineFeature);
+
+            this.polyFeature = new L.Class.PolyFeature(this);
+            this.featureList.push(this.polyFeature);
+
+            this.rulerFeature = new L.Class.MeasurementFeature(this);
+            this.featureList.push(this.rulerFeature);
+
+            this.labelFeature = new L.Class.LabelFeature(this);
+            this.featureList.push(this.labelFeature);
+
+            this.featureList.push(new L.Class.StyleFeature(this));
+
+            this.featureList.push(new L.Class.TrashFeature(this));
+
+            /* TODO: implemented
+
+              - rotate
+              - drag
+
+            */
 
             this.mainLayer = L.featureGroup();
             this.mainLayer.addTo(this._map);
@@ -103,6 +142,8 @@
                 L.DomEvent.stop(e);
             };
 
+            /* from handler.js */
+
             map.on('click', this.getMouseClickHandler, this);
 
             map.on('dblclick', this.dblClickEventFn, map);
@@ -118,33 +159,6 @@
 
         /* */
 
-        iconsInitial: function(container){
-            var features = this.features, cap;
-
-            for(var i in features){
-                cap = this.capString(features[i]);
-                this[features[i]] = L.DomUtil.create('a', 'icon-'+features[i], container);
-                this.toggleFeature(this[features[i]], this['enable'+cap], this['disable'+cap], features[i]);
-                this[features[i]].href = '#';
-                this[features[i]].title = '';
-            }
-        },
-
-        /* */
-
-        toggleFeature: function(button, activeFn, inactiveFn, feature){
-            var me = this;
-            L.DomEvent.on(button, 'click', L.DomEvent.stop).on(button, 'click', function(){
-                if(me[feature+'Enable']){
-                    inactiveFn.call(me);
-                } else {
-                    activeFn.call(me);
-                }
-            });
-        },
-
-        /* */
-
         initLayer: function(){
             this.layer = L.geoJson();
             this.layer.options.type = this.options.type;
@@ -152,7 +166,8 @@
             this.layer.options.description = '...';
             this.layer.addTo(this.mainLayer);
             this.layer.on('selected', this.onSelect);
-            this.anodes = this.fillAllnodes(this.layer);
+            /* TODO: send to nodes feature */
+            //this.anodes = this.fillAllnodes(this.layer);
         },
 
         /* */
@@ -166,8 +181,6 @@
                 map.off('dblclick', this.dblClickEventFn, map);
 
                 this.mainLayer.off('dblclick', this.dblClickEventFn, this.mainLayer);
-
-                this.disablePaint();
 
                 if(this.layer){
                     map.removeLayer(this.layer);
@@ -187,14 +200,6 @@
                     map.tap.enable();
                 }
 
-                var features = this.features;
-
-                for(var i in features){
-                    if(this[features[i]]){
-                      L.DomUtil.remove(this[features[i]]);
-                    }
-                }
-
                 for(var f in this.featureList){
                   this.featureList[f].destroy();
                 }
@@ -208,17 +213,6 @@
             this.latlngs = null;
             this.latlngsList = [];
             this.nodes = [];
-
-            /* TODO: migrate this to reset feature */
-
-            this.resetMeasurement();
-
-            for(var f in this.featureList){
-              if(this[this.featureList[f].options.name+'Enable']){
-                this.featureList[f].resetFeature();
-              }
-            }
-
         },
 
         /* */
@@ -268,43 +262,63 @@
             }
         },
 
-        enableFeature: function(feature, isType, isFeature){
+        shapeInit: function(){
+            var me = this,
+                map = this._map;
 
-            /* TODO: Refactor to be treated by each feature */
+            map.on('shape_toggle', function(data){
+                var id = data.id,
+                    geo = me.getGeoJson(id),
+                    selected = me.getLayerById(id);
 
-            if(feature != 'trash'){
-                this.disableFeature('node');
-                this.disableFeature('line');
-                this.disableFeature('ruler');
-                this.disableFeature('polygon');
-                this.disableFeature('drag');
-                this.disableFeature('rotate');
-                this.disableFeature('nodedrag');
-            }
+                geo.properties.hidden = data.hidden;
+                me.updateGeoJson(geo);
 
-            if(isType){
-                this.disableFeature('node');
-                this.disableFeature('line');
-                this.disableFeature('polygon');
-                this.disableFeature('ruler');
-                this.options.type = feature;
-            }
+                if(selected && data.hidden){
+                    me.mainLayer.removeLayer(selected);
+                } else if(!data.hidden){
+                    me.plotGeoJsons(id);
+                }
+            });
 
-            if(isFeature && this.nodeEnable){
-                return;
-            }
+            map.on('shape_delete', function(data){
+                var id = data.id,
+                    selected = me.getLayerById(id);
 
-            var button = this[feature];
-            L.DomUtil.addClass(button, 'sub-icon-active');
-            this[feature+'Enable'] = true;
-        },
+                if(selected){
+                    me.mainLayer.removeLayer(selected);
+                    me.deleteGeoJson(id);
+                }
+            });
 
-        disableFeature: function(feature){
-            var button = this[feature];
-            if(button){
-              L.DomUtil.removeClass(button, 'sub-icon-active');
-            }
-            this[feature+'Enable'] = false;
+            map.on('shape_focus', function(data){
+                var id = data.id,
+                    selected = me.getLayerById(id);
+
+                if(selected){
+                    me.selectedLayer = selected;
+                    map.setView(selected.getBounds().getCenter());
+                }
+            });
+
+            map.on('shape_update', function(data){
+                var id = data.id,
+                    geo = me.getGeoJson(id),
+                    selected = me.getLayerById(id);
+
+                me.mainLayer.removeLayer(selected);
+
+                geo.properties.hidden = data.hidden;
+                geo.properties.name = data.name;
+                geo.properties.description = data.description;
+
+                me.updateGeoJson(geo);
+
+                if(!data.hidden){
+                    me.plotGeoJsons(id);
+                }
+            });
+
         }
 
     });

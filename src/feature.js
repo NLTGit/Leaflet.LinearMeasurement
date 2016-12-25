@@ -2,70 +2,56 @@
 
     L.Class.Feature = L.Class.extend({
 
-      initialize: function (name, container) {
-          var me = this,
-              feature = this.options.name,
-              inactiveFn = this.disableFeature,
-              activeFn = this.enableFeature,
-              cap = this.capString(feature);
-
-          this.control = L.DomUtil.create('a', 'icon-'+feature, container);
-
-          this.control.href = '#';
-
-          this.control.title = '';
-
-          L.DomEvent.on(this.control, 'click', function(){
-              if(me[feature+'Enable']){
-                  inactiveFn.call(me);
-              } else {
-                  activeFn.call(me);
-              }
-          });
-
-          console.log(this.options.name, 'initialized');
-      },
-
-      destroy: function(){
-          L.DomUtil.remove(this.control);
-
-          console.log(this.options.name, 'destroyed');
-      },
-
-      options: {
-        name: 'node'
-      },
-
       statics: {
 
       },
 
       includes: [Utils],
 
+      initialize: function (core) {
+        this.options.color = core.options.color;
+        this.core = core;
+        this._map = core._map;
+      },
+
+      destroy: function(){
+
+      },
+
+      isEnabled: function(){
+        var feature = this.options.name;
+        return this[feature+'Enable'];
+      },
+
       enableFeature: function(){
         var feature = this.options.name;
 
         this[feature+'Enable'] = true;
-        L.DomUtil.addClass(this.control, 'sub-icon-active');
-
-        console.log(feature, 'enabled');
       },
 
       disableFeature: function(){
         var feature = this.options.name;
 
         this[feature+'Enable'] = false;
-        L.DomUtil.removeClass(this.control, 'sub-icon-active');
-
-        console.log(this.options.name, 'disabled');
       },
 
       resetFeature: function(){
-        
-        console.log(this.options.name, 'reset');
       },
 
       onClick: function(e){
+          /* The layer should exist before trying to render a node in it */
+
+          if(!this.core.layer){
+              this.core.initLayer();
+          }
+
+      },
+
+      onDblClick: function(e){
+
+      },
+
+      onMove: function(e){
 
       },
 
@@ -83,7 +69,104 @@
 
       onSelect: function(e){
 
+      }
+
+    });
+
+})();
+
+
+
+(function(){
+
+    L.Class.ControlFeature = L.Class.Feature.extend({
+
+      options: {
+          type: 'control'
       },
+
+      initialize: function (core) {
+        L.Class.Feature.prototype.initialize.call(this, core);
+
+        var me = this,
+            feature = this.options.name,
+            inactiveFn = this.disableFeature,
+            activeFn = this.enableFeature,
+            cap = this.capString(feature);
+
+        this.control = L.DomUtil.create('a', 'icon-'+feature, core.container);
+
+        this.control.href = '#';
+
+        this.control.title = '';
+
+        this._map = core._map;
+
+        L.DomEvent.on(this.control, 'click', function(){
+            if(me[feature+'Enable']){
+                inactiveFn.call(me);
+            } else {
+                activeFn.call(me);
+            }
+        });
+      },
+
+      destroy: function(){
+          L.DomUtil.remove(this.control);
+      },
+
+      isEnabled: function(){
+        var feature = this.options.name;
+        return this[feature+'Enable'];
+      },
+
+      resetOtherControlFeatures: function(){
+        var list = this.core.featureList;
+
+        for(var l in list){
+          if(list[l].options.type === 'control'){
+            list[l].disableFeature();
+          }
+        }
+      },
+
+      enableFeature: function(){
+        this.resetOtherControlFeatures();
+        L.Class.Feature.prototype.enableFeature.call(this);
+        L.DomUtil.addClass(this.control, 'sub-icon-active');
+      },
+
+      disableFeature: function(){
+        L.Class.Feature.prototype.disableFeature.call(this);
+        L.DomUtil.removeClass(this.control, 'sub-icon-active');
+      },
+
+      onClick: function(e){
+          this.core.layer.options.type = this.options.name;
+          this.core.layer.options.title = 'Untitled';
+          this.core.layer.options.description = '...';
+
+          this.core.selectedLayer = this.core.layer;
+
+          L.Class.Feature.prototype.onClick.call(this, e);
+
+          var me = this,
+              target = e.originalEvent.target;
+
+          var node = e.originalEvent.target;
+
+          if(this.hasClass(node, ['close'])){
+              return false;
+          } else if(this.hasClass(node, ['tip-layer'])){
+              return false;
+          } else if(this.hasClass(node, ['tip-input'])){
+              return false;
+          } else if(this.hasClass(target, ['leaflet-popup', 'total-popup-content'])){
+              return false;
+          }
+
+          return true;
+      }
 
     });
 

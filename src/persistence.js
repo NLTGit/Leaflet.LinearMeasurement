@@ -62,7 +62,7 @@ var Geo = {
         this.saveGeoJsons(geos);
     },
 
-    persistGeoJson: function(layer, simple){
+    persistGeoJson: function(layer){
         var me = this,
             geo, g,
             features = [],
@@ -77,11 +77,9 @@ var Geo = {
 
         layer.eachLayer(function(l){
             g = l.toGeoJSON();
+
             g.properties.styles = l.options;
 
-            if(l.options.marker){
-                delete g.properties.styles.marker;
-            }
             features.push(g);
         });
 
@@ -89,13 +87,11 @@ var Geo = {
             type: "FeatureCollection",
             properties: {
                 id: id,
-                measure: simple ? false : layer.measure,
-                separation: simple ? false : layer.separation,
                 hidden: false,
-                description: layer.description,
-                name: layer.title,
+                description: layer.options.description,
+                name: layer.options.title,
                 type: layer.options.type,
-                simple: simple || !this.rulerEnable
+                lastPoint: layer.options.lastPoint
             },
             features: features
         };
@@ -109,10 +105,19 @@ var Geo = {
         this.resetRuler();
 
         var geos = this.getGeoJsons(),
-            gLayer, multi;
+            gLayer;
 
         var pointToLayerFn = function (feature, latlng) {
-            return me.renderCircle(latlng, false, false, false, true, feature.properties.styles);
+            var l;
+
+            if(feature.properties.styles.label){
+              l = me.nodeFeature.renderLabel(latlng, feature.properties.styles.label, feature.properties.styles, false);
+
+            } else {
+              l = me.nodeFeature.renderCircle(latlng, false, false, false, true, feature.properties.styles);
+            }
+
+            return l;
         };
 
         var styleFn = function(feature){
@@ -126,7 +131,6 @@ var Geo = {
         };
 
         for(var g in geos){
-
             if(id && id !== geos[g].properties.id || geos[g].properties.hidden){
                 continue;
             }
@@ -134,34 +138,20 @@ var Geo = {
             props = geos[g].properties;
 
             gLayer = L.geoJson(geos[g], {
+                id: props.id,
                 pointToLayer: pointToLayerFn,
                 style: styleFn,
-                id: props.id,
                 hidden: props.hidden,
                 description: props.description,
                 title: props.name,
-                measure: props.measure,
-                separation: props.separation,
-                type: props.type,
-                complete: true,
-                simple: props.simple
+                lastPoint: props.lastPoint
             }).addTo(this.mainLayer);
-
-            multi = null;
 
             gLayer.eachLayer(searchLayerFn);
 
-            gLayer.multi = multi;
-            gLayer.measure = gLayer.options.measure;
-            gLayer.separation = gLayer.options.separation;
-            gLayer.type = gLayer.options.type;
-            gLayer.title = gLayer.options.title;
-
-            if(multi){
-                me.onRedraw(gLayer, multi);
+            if(props.lastPoint){
+                this.labelFeature.drawTooltip(props.lastPoint, gLayer, props.name);
             }
-
-            me.enableShapeDrag(gLayer);
         }
     }
 };

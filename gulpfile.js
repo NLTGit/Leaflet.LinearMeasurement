@@ -11,11 +11,18 @@ gulp.task('clean:dist', function () {
 
 gulp.task('build', ['clean:dist'], function() {
   return gulp.src([
-      'src/utils.js',    
-      'src/features/*.js',
+      'src/utils.js',
       'src/feature.js',
+      'src/persistence.js',
+      'src/features/label.js',
+      'src/features/nap.js',
+      'src/features/node.js',
+      'src/features/line.js',
+      'src/features/poly.js',
+      'src/features/measure.js',
+      'src/features/style.js',
+      'src/features/trash.js',
       'src/handlers.js',
-      'src/shapes.js',
       'src/core.js'
     ])
 
