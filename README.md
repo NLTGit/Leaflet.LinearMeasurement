@@ -27,73 +27,94 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
 <div>
   <p>LinearCore is a control class that holds several plugins to interact with the map. You need to just add an instance to the map with a config object:</p>
 
-  <code>
+  <pre>
     map.addControl(new L.Control.LinearCore({
       unitSystem: 'imperial',
       color: '#FF0080',
       type: 'line'
     }));
-  </code>
+  </pre>
 
   <p>There is the possibility to extend the plugin to handle some of the internal events: </p>
-  
 </div>
 
-<pre>
-  <code>
-      var cost_underground = 12.55,
-          cost_above_ground = 17.89,
-          html = [
-              '<table>',
-              ' <tr><td class="cost_label">Cost Above Ground:</td><td class="cost_value">${total_above_ground}</td></tr>',
-              ' <tr><td class="cost_label">Cost Underground:</td><td class="cost_value">${total_underground}</td></tr>',
-              '</table>'
-          ].join(''),
-          numberWithCommas = function(x) {
-              return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-          };
 
-      var Core = L.Control.LinearCore.extend({
-          onSelect: function(e){
+<code>
+    var Core = L.Control.LinearCore.extend({
+        onSelect: function(e){
 
-              if(!e.total){
-                return;
-              }
+            if(!e.total){
+              return;
+            }
 
-              var distance = e.total.scalar;
+            var distance = e.total.scalar;
 
-              if(e.total.unit === 'mi'){
-                  distance *= e.sub_unit;
+            if(e.total.unit === 'mi'){
+                distance *= e.sub_unit;
 
-              } else if(e.total.unit === 'km'){
-                  distance *= 3280.84;
+            } else if(e.total.unit === 'km'){
+                distance *= 3280.84;
 
-              } else if(e.total.unit === 'm'){
-                  distance *= 3.28084;
-              }
+            } else if(e.total.unit === 'm'){
+                distance *= 3.28084;
+            }
 
-              var data = {
-                  total_above_ground: numberWithCommas(L.Util.formatNum(cost_above_ground * distance, 2)),
-                  total_underground: numberWithCommas(L.Util.formatNum(cost_underground * distance, 2))
-              };
+            var cost_underground = 12.55,
+                cost_above_ground = 17.89,
+                html = [
+                    '<table>',
+                    ' <tr><td class="cost_label">Cost Above Ground:</td><td class="cost_value">${total_above_ground}</td></tr>',
+                    ' <tr><td class="cost_label">Cost Underground:</td><td class="cost_value">${total_underground}</td></tr>',
+                    '</table>'
+                ].join(''),
+                numberWithCommas = function(x) {
+                    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                };
 
-              if(e.rulerOn){
-                  var content = L.Util.template(html, data),
-                      popup = L.popup().setContent(content);
+            var data = {
+                total_above_ground: numberWithCommas(L.Util.formatNum(cost_above_ground * distance, 2)),
+                total_underground: numberWithCommas(L.Util.formatNum(cost_underground * distance, 2))
+            };
 
-                  e.total_label.bindPopup(popup, { offset: [45, 0] });
-                  e.total_label.openPopup();
-              }
-          }
-      });
+            if(e.rulerOn){
+                var content = L.Util.template(html, data),
+                    popup = L.popup().setContent(content);
 
-      map.addControl(new Core({
-        unitSystem: 'imperial',
-        color: '#FF0080',
-        type: 'line'
-      }));
-  </code>
-</pre>
+                e.total_label.bindPopup(popup, { offset: [45, 0] });
+                e.total_label.openPopup();
+            }
+        }
+    });
+
+    map.addControl(new Core({
+      unitSystem: 'imperial',
+      color: '#FF0080',
+      type: 'line'
+    }));
+</code>
+
+<h2>Options</h2>
+
+<table>
+  <tr><th>option</th><th>default</th></tr>
+  <tr><td>position</td><td>topleft</td></tr>
+  <tr><td>color</td> <td>#4D90FE</td></tr>
+  <tr><td>fillColor</td> <td>#fff</td></tr>
+  <tr><td>type</td> <td>node</td></tr>
+  <tr><td>features</td> ['node', 'line', 'polygon', 'ruler', 'paint', 'drag', 'rotate', 'nodedrag', 'trash']</td></tr>
+  <tr><td>pallette</td> ['#FF0080', '#4D90FE', 'red', 'blue', 'green', 'orange', 'black']</td></tr>
+  <tr><td>dashArrayOptions</td> <td>['5, 5', '5, 10', '10, 5', '5, 1', '1, 5', '0.9', '15, 10, 5', '15, 10, 5, 10', '15, 10, 5, 10, 15', '5, 5, 1, 5']</td></tr>
+  <tr><td>fill</td> <td>true</td></tr>
+  <tr><td>stroke</td> <td>true</td></tr>
+  <tr><td>dashArray</td> <td>5, 5</td></tr>
+  <tr><td>weight</td> <td>2</td></tr>
+  <tr><td>opacity</td> <td>1</td></tr>
+  <tr><td>fillOpacity</td> <td>0.5</td></tr>
+  <tr><td>radius</td> <td>3</td></tr>
+  <tr><td>unitSystem</td> <td>imperial</td></tr>
+  <tr><td>doubleClickSpeed</td> <td>300</td></tr>
+
+</table>
 
 <h2>Requirements</h2>
 
