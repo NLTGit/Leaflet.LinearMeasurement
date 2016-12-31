@@ -22,6 +22,11 @@
 
         onMove: function(e, layer){
             L.Class.LineFeature.prototype.onMove.call(this, e, layer);
+
+            if(this.poly){
+              this.poly.options.stype = 'ruler';
+            }
+
             this.drawRulerLines(layer, e);
         },
 
@@ -43,7 +48,7 @@
               return;
             }
 
-            var latlngs = this.latlngs.concat([e.latlng]),
+            var latlngs = e ? this.latlngs.concat([e.latlng]) : this.latlngs,
                 prev,
                 total = 0,
                 dimension = 0;
@@ -205,7 +210,7 @@
         clearAll: function(layer){
             if(layer){
                 layer.eachLayer(function(l){
-                    if(l.options && l.options.type === 'tmp' || l.options.type === 'fixed'){
+                    if(l.options && l.options.type === 'tmp' || l.options.type === 'fixed' || l.options.type === 'label'){
                         layer.removeLayer(l);
                     }
                 });

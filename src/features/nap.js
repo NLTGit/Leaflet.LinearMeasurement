@@ -13,26 +13,8 @@
             var me = this;
 
             setTimeout(function(){
-              me.reorderFeatures(core);
+              me.reorderFeatures('nap', core);
             }, 1000);
-        },
-
-        reorderFeatures: function(core){
-            /* nap feature ensures it runs the first by placing it at the top of
-               the feature chain */
-
-            for(var i in core.featureList){
-
-                if(core.featureList[i].options.name === 'nap'){
-
-                  core.featureList.splice(parseInt(i), 1);
-
-                  core.featureList.unshift(this);
-
-                  break;
-                }
-
-            };
         },
 
         onClick: function(e){

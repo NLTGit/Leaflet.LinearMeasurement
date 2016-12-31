@@ -22,22 +22,6 @@
             return ret;
         },
 
-        onDblClick: function(e){
-
-        },
-
-        onDraw: function(e, multi, layer, poly){
-
-        },
-
-        onRedraw: function(layer, multi, poly){
-
-        },
-
-        onSelect: function(e){
-
-        },
-
         renderCircle: function(latLng, layer, type, label, skipLabel, config) {
             var color = this.options.color,
                 options = this.core.options,

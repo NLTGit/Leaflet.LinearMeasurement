@@ -13,7 +13,6 @@
             var ret = L.Class.NodeFeature.prototype.onClick.call(this, e);
 
             if(ret){
-
               if(L.DomUtil.hasClass(e.originalEvent.target, 'icon-line')){
                   return false;
               }
@@ -22,7 +21,6 @@
             }
 
             return ret;
-
         },
 
         onMove: function(e, layer){
@@ -59,7 +57,8 @@
                 opacity: options.opacity,
                 fillOpacity: options.fillOpacity,
                 weight: options.weight,
-                dashArray: options.dashArray
+                dashArray: options.dashArray,
+                type: 'line'
             });
 
             poly.addTo(layer);
@@ -111,6 +110,16 @@
             multi.addTo(layer);
 
             return multi;
+        },
+
+        clearAll: function(layer){
+            if(layer){
+                layer.eachLayer(function(l){
+                    if(l.options && l.options.type === 'tmp' || l.options.type === 'fixed' || l.options.type === 'label'){
+                        layer.removeLayer(l);
+                    }
+                });
+            }
         }
 
     });

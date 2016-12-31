@@ -8,10 +8,6 @@
           dashArrayOptions: ['5, 5', '5, 10', '10, 5', '5, 1', '1, 5', '0.9', '15, 10, 5', '15, 10, 5, 10', '15, 10, 5, 10, 15', '5, 5, 1, 5']
         },
 
-        onClick: function(e){
-
-        },
-
         enableFeature: function(){
           L.Class.ControlFeature.prototype.enableFeature.call(this);
           this.buildPaintPane();

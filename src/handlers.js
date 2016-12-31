@@ -1,9 +1,5 @@
 var Handlers = {
 
-  onAdded: function(){},
-
-  onSelect: function(e){},
-
   onDblClick: function(e, layer, existing){
       var me = this,
           feature;
@@ -73,8 +69,8 @@ var Handlers = {
       return time < this.options.doubleClickSpeed;
   },
 
-  getMouseDblClickHandler: function(e){
+  onAdded: function(){},
 
-  }
+  onSelect: function(e){}
 
 };

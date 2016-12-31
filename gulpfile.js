@@ -16,6 +16,7 @@ gulp.task('build', ['clean:dist'], function() {
       'src/persistence.js',
       'src/features/label.js',
       'src/features/nap.js',
+      'src/features/drag.js',
       'src/features/node.js',
       'src/features/line.js',
       'src/features/poly.js',
@@ -32,9 +33,10 @@ gulp.task('build', ['clean:dist'], function() {
       }
     }))
 
-    .pipe(concat('Leaflet.LinearMeasurement.js'))
+    .pipe(concat('basic.ruler-src.js'))
 
-    .pipe(gulp.dest('dist'));
+    //.pipe(gulp.dest('dist'))
+    .pipe(gulp.dest('../ULINE/UI/resources/js/leaflet/plugins/BasicRuler'));
 });
 
 gulp.task('sass', function(){
@@ -42,7 +44,9 @@ gulp.task('sass', function(){
   .pipe(sass({
     outputStyle: 'compressed'
   }).on('error', sass.logError))
-  .pipe(gulp.dest('./dist'))
+  .pipe(concat('basic.ruler-src.css'))
+  //.pipe(gulp.dest('./dist'))
+  .pipe(gulp.dest('../ULINE/UI/resources/js/leaflet/plugins/BasicRuler'))
 });
 
 gulp.task('sass:watch', function(){

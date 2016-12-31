@@ -119,12 +119,7 @@
 
             this.featureList.push(new L.Class.TrashFeature(this));
 
-            /* TODO: implemented
-
-              - rotate
-              - drag
-
-            */
+            this.featureList.push(new L.Class.DragFeature(this));
 
             this.mainLayer = L.featureGroup();
             this.mainLayer.addTo(this._map);
@@ -166,8 +161,6 @@
             this.layer.options.description = '...';
             this.layer.addTo(this.mainLayer);
             this.layer.on('selected', this.onSelect);
-            /* TODO: send to nodes feature */
-            //this.anodes = this.fillAllnodes(this.layer);
         },
 
         /* */
@@ -229,37 +222,6 @@
             this.layer.removeLayer(this.poly);
 
             this.resetRuler(false);
-        },
-
-        /* */
-
-        setUpColor: function(){
-            if(this.options.color.indexOf('#') === -1){
-                this.options.color = '#' + this.options.color;
-            }
-
-            if(this.options.fillColor.indexOf('#') === -1){
-                this.options.fillColor = '#' + this.options.fillColor;
-            }
-
-            this.includeColor(this.options.color);
-            this.includeColor(this.options.fillColor);
-        },
-
-        /* */
-
-        includeColor: function(color){
-            var colorFound = false;
-
-            for(var o in this.options.pallette){
-                if(this.options.pallette[o] === color){
-                    colorFound = true;
-                }
-            }
-
-            if(!colorFound){
-                this.options.pallette.push(color);
-            }
         },
 
         shapeInit: function(){
