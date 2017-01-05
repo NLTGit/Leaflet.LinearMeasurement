@@ -24,11 +24,13 @@
             L.Class.ControlFeature.prototype.enableFeature.call(this);
             this.core._map.on('mousedown', this.startDragging, this);
             this.initialPreparation();
+            this.core._map.dragging.disable();
         },
 
         disableFeature: function(){
             L.Class.ControlFeature.prototype.disableFeature.call(this);
             this.core._map.off('mousedown', this.startDragging, this);
+            this.core._map.dragging.enable();
         },
 
         onClick: function(e){
@@ -46,13 +48,13 @@
                 if(l.options.type === 'line' || l.options.type === 'polygon'){
 
                     l.on('mousedown', function(){
-                        me.core._map.dragging.disable();
+                        //me.core._map.dragging.disable();
                         me.selectedLayer = layer;
                     });
 
-                    l.on('mouseup', function(){
+                    /*l.on('mouseup', function(){
                         me.core._map.dragging.enable();
-                    });
+                    });*/
 
                 }
             };
@@ -92,7 +94,7 @@
 
                         if(latlng.equals(e.latlng, 0.003)){
                             me.selectedLayer = layer;
-                            me.core._map.dragging.disable();
+                            //me.core._map.dragging.disable();
                             return;
                         }
                     }
@@ -123,7 +125,7 @@
 
         stopDragging: function(e){
             var me = this;
-            this.core._map.dragging.enable();
+            //this.core._map.dragging.enable();
             this.selectedNode = null;
             this.selectedLayer = null;
             this.core._map.off('mousemove', this.dragLayer, this);
@@ -209,7 +211,7 @@
                         me.core.rulerFeature.drawRulerLines(layer, null);
                         me.core.rulerFeature.layer = null;
                         me.core.rulerFeature.latlngs = null;
-                        
+
                     } else {
                         me.core.lineFeature.clearAll(layer);
                     }
