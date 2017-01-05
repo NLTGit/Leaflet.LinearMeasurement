@@ -16,21 +16,19 @@
             var me = this;
 
             setTimeout(function(){
-              me.reorderFeatures('drag', core);
+                me.reorderFeatures('drag', core);
             }, 1000);
-
         },
 
         enableFeature: function(){
             L.Class.ControlFeature.prototype.enableFeature.call(this);
             this.core._map.on('mousedown', this.startDragging, this);
-            this.core._map.dragging.disable();
+            this.initialPreparation();
         },
 
         disableFeature: function(){
             L.Class.ControlFeature.prototype.disableFeature.call(this);
             this.core._map.off('mousedown', this.startDragging, this);
-            this.core._map.dragging.enable();
         },
 
         onClick: function(e){
@@ -39,10 +37,31 @@
             }
         },
 
-        startDragging: function(e){
-            this.core._map.dragging.disable();
-
+        initialPreparation: function(){
             var me = this;
+
+            /* Dragging shape when fill line is present in polygon */
+
+            var fn = function(l, e, layer){
+                if(l.options.type === 'line' || l.options.type === 'polygon'){
+
+                    l.on('mousedown', function(){
+                        me.core._map.dragging.disable();
+                        me.selectedLayer = layer;
+                    });
+
+                    l.on('mouseup', function(){
+                        me.core._map.dragging.enable();
+                    });
+
+                }
+            };
+
+            this.checkSorroundings({}, fn);
+        },
+
+        startDragging: function(e){
+            var me = this, latlngs;
 
             var fn = function(l, e, layer){
 
@@ -54,10 +73,16 @@
                         return;
                     }
 
-                /* Everything that is not a node will drag the whole shape */
+                /* Dragging near the line */
 
-              } else if(l.getLatLngs){
-                    var segments = me.getSegments(l.getLatLngs()),
+                } else if(l.getLatLngs){
+                    latlngs = l.getLatLngs();
+
+                    if(l.options.type === 'polygon'){
+                        latlngs = latlngs[0];
+                    }
+
+                    var segments = me.getSegments(latlngs),
                         point, latlng,
                         p = me.core._map.latLngToContainerPoint(e.latlng);
 
@@ -67,6 +92,7 @@
 
                         if(latlng.equals(e.latlng, 0.003)){
                             me.selectedLayer = layer;
+                            me.core._map.dragging.disable();
                             return;
                         }
                     }
@@ -92,13 +118,12 @@
                 prev = next;
             }
 
-            console.log(segments);
-
             return segments;
         },
 
         stopDragging: function(e){
             var me = this;
+            this.core._map.dragging.enable();
             this.selectedNode = null;
             this.selectedLayer = null;
             this.core._map.off('mousemove', this.dragLayer, this);
@@ -125,9 +150,13 @@
                 var layer = this.selectedLayer;
 
                 layer.eachLayer(function(l){
-                    if(l.options.type === 'line'){
+                    if(l.options.type === 'line' || l.options.type === 'polygon'){
                         var latlngs = l.getLatLngs(),
                             pos;
+
+                        if(l.options.type === 'polygon'){
+                            latlngs = latlngs[0];
+                        }
 
                         for(var i in latlngs){
                             pos = me.core._map.latLngToContainerPoint(latlngs[i]);
@@ -153,33 +182,42 @@
             var me = this;
 
             var fn = function(l, latlng, layer){
-                var latlngs = [];
+                var latlngs = [], last;
 
-                if(l.options.type === 'line'){
+                if(l.options.type === 'line' || l.options.type === 'polygon'){
                     latlngs = l.getLatLngs();
+
+                    if(l.options.type === 'polygon'){
+                        latlngs = latlngs[0];
+                    }
 
                     for(var i in latlngs){
                       if(latlngs[i].equals(latlng)){
-                        latlngs[i] = newLatLng;
-                        l.setLatLngs(latlngs);
-                        break;
+                          latlngs[i].lat = newLatLng.lat;
+                          latlngs[i].lng = newLatLng.lng;
+                          break;
                       }
                     }
 
+                    l.setLatLngs(latlngs);
+
                     if(l.options.stype === 'ruler'){
+
                         me.core.rulerFeature.layer = layer;
                         me.core.rulerFeature.latlngs = latlngs;
                         me.core.rulerFeature.clearAll(layer);
                         me.core.rulerFeature.drawRulerLines(layer, null);
                         me.core.rulerFeature.layer = null;
                         me.core.rulerFeature.latlngs = null;
+                        
                     } else {
                         me.core.lineFeature.clearAll(layer);
                     }
 
-                    me.core.labelFeature.drawTooltip(latlngs[latlngs.length - 1], layer, layer.options.title);
-                }
+                    last = latlngs[latlngs.length - 1];
 
+                    me.core.labelFeature.drawTooltip(last, layer, layer.options.title);
+                }
 
             };
 

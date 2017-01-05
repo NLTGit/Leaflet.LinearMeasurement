@@ -34,7 +34,11 @@
                 latlngs = this.latlngs.concat([e.latlng]);
 
             if(!this.poly){
-                this.poly = this.renderPolyline(latlngs, layer);
+                if(this.options.name === 'polygon'){
+                    this.poly = this.renderPolygon(latlngs, layer);
+                } else {
+                    this.poly = this.renderPolyline(latlngs, layer);
+                }
             } else {
                 this.poly.setLatLngs(latlngs);
             }
@@ -66,50 +70,24 @@
             return poly;
         },
 
-        renderMultiPolyline: function(latLngs, layer) {
-            /* Leaflet version 1+ delegated the concept of multi-poly-line to the polyline */
-            var multi;
+        renderPolygon: function(latLngs, layer) {
+            var options = this.core.options;
 
-            if(options.type === 'polygon'){
-                multi = L.polygon(latLngs, {
-                    color: options.color,
-                    fill: options.fill,
-                    fillColor: options.fillColor,
-                    stroke: options.stroke,
-                    opacity: options.opacity,
-                    fillOpacity: options.fillOpacity,
-                    weight: options.weight,
-                    dashArray: options.dashArray
-                });
-            } else {
-                if(L.version.startsWith('0')){
-                    multi = L.multiPolyline(latLngs, {
-                        color: options.color,
-                        fill: 'transparent',
-                        fillColor: options.fillColor,
-                        stroke: options.stroke,
-                        opacity: options.opacity,
-                        fillOpacity: options.fillOpacity,
-                        weight: options.weight,
-                        dashArray: options.dashArray
-                    });
-                } else {
-                    multi = L.polyline(latLngs, {
-                        color: options.color,
-                        fill: 'transparent',
-                        fillColor: options.fillColor,
-                        stroke: options.stroke,
-                        opacity: options.opacity,
-                        fillOpacity: options.fillOpacity,
-                        weight: options.weight,
-                        dashArray: options.dashArray
-                    });
-                }
-            }
+            var poly = L.polygon(latLngs, {
+                color: options.color,
+                fill: layer.options.type === 'polygon' ? options.fill : '',
+                fillColor: options.fillColor,
+                stroke: options.stroke,
+                opacity: options.opacity,
+                fillOpacity: options.fillOpacity,
+                weight: options.weight,
+                dashArray: options.dashArray,
+                type: 'polygon'
+            });
 
-            multi.addTo(layer);
+            poly.addTo(layer);
 
-            return multi;
+            return poly;
         },
 
         clearAll: function(layer){
