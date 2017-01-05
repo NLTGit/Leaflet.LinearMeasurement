@@ -157,6 +157,8 @@
 
         initLayer: function(){
             this.layer = L.geoJson();
+            this.layer.is_new = true;
+            this.layer.tik = 0;
             this.layer.options.type = this.options.type;
             this.layer.options.title = 'Untitled';
             this.layer.options.description = '...';

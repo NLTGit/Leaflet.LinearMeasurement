@@ -35,8 +35,8 @@ gulp.task('build', ['clean:dist'], function() {
 
     .pipe(concat('basic.ruler-src.js'))
 
-    //.pipe(gulp.dest('dist'))
-    .pipe(gulp.dest('../ULINE/UI/resources/js/leaflet/plugins/BasicRuler'));
+    .pipe(gulp.dest('dist'))
+    //.pipe(gulp.dest('../ULINE/UI/resources/js/leaflet/plugins/BasicRuler'));
 });
 
 gulp.task('sass', function(){
@@ -45,8 +45,8 @@ gulp.task('sass', function(){
     outputStyle: 'compressed'
   }).on('error', sass.logError))
   .pipe(concat('basic.ruler-src.css'))
-  //.pipe(gulp.dest('./dist'))
-  .pipe(gulp.dest('../ULINE/UI/resources/js/leaflet/plugins/BasicRuler'))
+  .pipe(gulp.dest('./dist'))
+  //.pipe(gulp.dest('../ULINE/UI/resources/js/leaflet/plugins/BasicRuler'))
 });
 
 gulp.task('sass:watch', function(){

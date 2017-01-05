@@ -42,7 +42,7 @@ var Handlers = {
       }
 
       if(isNode){
-        this.reset(e);
+          this.reset(e);
       }
   },
 

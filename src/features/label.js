@@ -72,7 +72,8 @@
             var me = this,
                 workspace = layer,
                 title = label ? label : 'Untitled'
-                isRuler = label && (label.indexOf(' ft') !== -1 || label.indexOf(' mi') !== -1);
+                isRuler = label && (label.indexOf(' ft') !== -1 || label.indexOf(' mi') !== -1),
+                map = me.core._map;
 
             var data = {
                 latlng: e.latlng,
@@ -84,83 +85,94 @@
                 rulerOn: isRuler
             };
 
-            var fireSelected = function(e){
+            var isDbl = function(e){
+                var now = (new Date()).getTime(),
+                    time = now - workspace.tik;
+
+                workspace.tik = now;
+                return time < 300;
+            };
+
+            var closeme = function(e){
                 L.DomEvent.stop(e);
 
-                var map = me.core._map;
-
-                me.core.selectedLayer = workspace;
-
-                workspace.fireEvent('selected', data);
+                if(isDbl(e)){
+                  fireSelected();
+                }
 
                 if(e.originalEvent && L.DomUtil.hasClass(e.originalEvent.target, 'close')){
                     map.fire('shape_delete', { id: workspace.options.id });
                     map.fire('shape_changed');
+                }
+            };
 
-                } else {
-                    var target_layer = e.target || layer;
+            var fireSelected = function(e){
+                me.core.selectedLayer = workspace;
 
-                    /* We don't want to edit measurement tool labels */
+                workspace.fireEvent('selected', data);
 
-                    if(isRuler) {
+                var target_layer = layer;
+
+                /* We don't want to edit measurement tool labels */
+
+                if(isRuler) {
+                  return;
+                }
+
+                var label_field = '',
+                    parent = layer.total._icon.children[0],
+                    children = parent.children,
+                    input;
+
+                var fn1 = function(es){
+                    L.DomUtil.addClass(input, 'hidden-el');
+                    L.DomUtil.removeClass(label_field, 'hidden-el');
+
+                    layer.options.title = input.value;
+
+                    me.core.persistGeoJson(layer);
+
+                    input.removeEventListener('blur', fn1);
+                    input.removeEventListener('keyup', fn2);
+                };
+
+                var fn2 = function(es){
+                    var v = input.value;
+                    label_field.innerHTML = v || '&nbsp;';
+                    target_layer.title = v || '';
+                    title = v || '';
+
+                    if(es.key === 'Enter'){
+                      fn1();
+                    } else {
+                      label_field.innerHTML = input.value || '&nbsp;';
+                      w = label_field.offsetWidth + 7;
+                      input.style.width = w + 'px';
+                    }
+                };
+
+                for(var n in children){
+                    if(!children[n].nodeName) {
                       return;
                     }
 
-                    var label_field = '',
-                        parent = layer.total._icon.children[0],
-                        children = parent.children,
-                        input;
+                    if(L.DomUtil.hasClass(children[n], 'tip-layer')){
+                        label_field = children[n];
+                        L.DomUtil.addClass(label_field, 'hidden-el');
 
-                    var fn1 = function(es){
-                        L.DomUtil.addClass(input, 'hidden-el');
-                        L.DomUtil.removeClass(label_field, 'hidden-el');
-
-                        layer.options.title = input.value;
-
-                        me.core.persistGeoJson(layer);
-
-                        input.removeEventListener('blur', fn1);
-                        input.removeEventListener('keyup', fn2);
-                    };
-
-                    var fn2 = function(es){
-                        var v = input.value;
-                        label_field.innerHTML = v || '&nbsp;';
-                        target_layer.title = v || '';
-                        title = v || '';
-
-                        if(es.key === 'Enter'){
-                          fn1();
-                        } else {
-                          label_field.innerHTML = input.value || '&nbsp;';
-                          w = label_field.offsetWidth + 7;
-                          input.style.width = w + 'px';
-                        }
-                    };
-
-                    for(var n in children){
-                        if(!children[n].nodeName) {
-                          return;
-                        }
-
-                        if(L.DomUtil.hasClass(children[n], 'tip-layer')){
-                            label_field = children[n];
-                            L.DomUtil.addClass(label_field, 'hidden-el');
-
-                        } else if(L.DomUtil.hasClass(children[n], 'tip-input')){
-                            input = children[n];
-                            input.value = title;
-                            L.DomUtil.removeClass(input, 'hidden-el');
-                            input.addEventListener('keyup', fn2);
-                            input.addEventListener('blur', fn1);
-                            input.focus();
-                        }
+                    } else if(L.DomUtil.hasClass(children[n], 'tip-input')){
+                        input = children[n];
+                        input.value = title;
+                        L.DomUtil.removeClass(input, 'hidden-el');
+                        input.addEventListener('keyup', fn2);
+                        input.addEventListener('blur', fn1);
+                        input.focus();
                     }
-
-                    var w = label_field.offsetWidth + 7;
-
-                    input.style.width = w + 'px';
                 }
+
+                var w = label_field.offsetWidth + 7;
+
+                input.style.width = w + 'px';
             };
 
             /* TODO: Move this line */
@@ -168,12 +180,16 @@
             this.core.persistGeoJson(layer);
 
             workspace.off('click');
-            workspace.on('click', fireSelected);
+
+            workspace.on('click', closeme);
+
             workspace.on('selected', this.onSelect);
 
             /* Only fire to auto-focus newly created path */
 
-            workspace.fireEvent('click', fireSelected);
+            if(workspace.is_new){
+                fireSelected();
+            }
         }
 
 
