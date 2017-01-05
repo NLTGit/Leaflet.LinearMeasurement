@@ -51,7 +51,7 @@
 
             var poly = L.polyline(latLngs, {
                 color: options.color,
-                fill: options.fill,
+                fill: layer.options.type === 'polygon' ? options.fill : '',
                 fillColor: options.fillColor,
                 stroke: options.stroke,
                 opacity: options.opacity,
@@ -85,7 +85,7 @@
                 if(L.version.startsWith('0')){
                     multi = L.multiPolyline(latLngs, {
                         color: options.color,
-                        fill: options.fill,
+                        fill: 'transparent',
                         fillColor: options.fillColor,
                         stroke: options.stroke,
                         opacity: options.opacity,
@@ -96,7 +96,7 @@
                 } else {
                     multi = L.polyline(latLngs, {
                         color: options.color,
-                        fill: options.fill,
+                        fill: 'transparent',
                         fillColor: options.fillColor,
                         stroke: options.stroke,
                         opacity: options.opacity,

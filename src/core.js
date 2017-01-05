@@ -101,7 +101,8 @@
             this.nodeFeature = new L.Class.NodeFeature(this);
             this.featureList.push(this.nodeFeature);
 
-            this.featureList.push(new L.Class.NapFeature(this));
+            this.napFeature = new L.Class.NapFeature(this);
+            this.featureList.push(this.napFeature);
 
             this.lineFeature = new L.Class.LineFeature(this);
             this.featureList.push(this.lineFeature);

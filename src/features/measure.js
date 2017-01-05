@@ -12,6 +12,16 @@
             this.resetRuler();
         },
 
+        enableFeature: function(){
+          L.Class.LineFeature.prototype.enableFeature.call(this);
+          this.core.napFeature.disableFeature();
+        },
+
+        disableFeature: function(){
+          L.Class.LineFeature.prototype.disableFeature.call(this);
+          this.core.napFeature.enableFeature();
+        },
+
         onClick: function(e){
             if(L.DomUtil.hasClass(e.originalEvent.target, 'icon-ruler')){
                 return;
