@@ -6,9 +6,10 @@
           name: 'paint'
         },
 
-        initialize: function (core) {
+        initialize: function (core, map) {
             L.Class.Feature.prototype.initialize.call(this, core);
             this.enableFeature();
+            this.map = map;
         },
 
         onClick: function(e, isNode){
@@ -73,7 +74,9 @@
                 workspace = layer,
                 title = label ? label : 'Untitled'
                 isRuler = label && (label.indexOf(' ft') !== -1 || label.indexOf(' mi') !== -1),
-                map = me.core._map;
+                map = this.core._map;
+
+            console.log(this._map);
 
             var data = {
                 latlng: e.latlng,
@@ -94,10 +97,12 @@
             };
 
             var closeme = function(e){
+                var map = me.map;
+
                 L.DomEvent.stop(e);
 
                 if(isDbl(e)){
-                  fireSelected();
+                    fireSelected();
                 }
 
                 if(e.originalEvent && L.DomUtil.hasClass(e.originalEvent.target, 'close')){
@@ -107,6 +112,8 @@
             };
 
             var fireSelected = function(e){
+                var map = me.map;
+
                 me.core.selectedLayer = workspace;
 
                 workspace.fireEvent('selected', data);
@@ -116,7 +123,7 @@
                 /* We don't want to edit measurement tool labels */
 
                 if(isRuler) {
-                  return;
+                    return;
                 }
 
                 var label_field = '',

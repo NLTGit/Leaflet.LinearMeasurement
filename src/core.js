@@ -113,7 +113,7 @@
             this.rulerFeature = new L.Class.MeasurementFeature(this);
             this.featureList.push(this.rulerFeature);
 
-            this.labelFeature = new L.Class.LabelFeature(this);
+            this.labelFeature = new L.Class.LabelFeature(this, map);
             this.featureList.push(this.labelFeature);
 
             this.featureList.push(new L.Class.StyleFeature(this));
