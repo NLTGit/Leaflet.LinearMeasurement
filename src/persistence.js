@@ -144,7 +144,8 @@ var Geo = {
                 hidden: props.hidden,
                 description: props.description,
                 title: props.name,
-                lastPoint: props.lastPoint
+                lastPoint: props.lastPoint,
+                type: props.type
             }).addTo(this.mainLayer);
 
             gLayer.eachLayer(searchLayerFn);

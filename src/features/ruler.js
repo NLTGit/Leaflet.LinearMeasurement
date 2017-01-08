@@ -1,10 +1,9 @@
 (function(){
 
-    L.Class.MeasurementFeature = L.Class.LineFeature.extend({
+    L.Class.RulerFeature = L.Class.LineFeature.extend({
 
         options: {
-          name: 'ruler',
-          unitSystem: 'imperial' // imperial | metric
+          name: 'ruler'
         },
 
         initialize: function (core) {
@@ -14,12 +13,18 @@
 
         enableFeature: function(){
           L.Class.LineFeature.prototype.enableFeature.call(this);
-          this.core.napFeature.disableFeature();
+
+          if(this.core.napFeature){
+            this.core.napFeature.disableFeature();
+          }
         },
 
         disableFeature: function(){
           L.Class.LineFeature.prototype.disableFeature.call(this);
-          this.core.napFeature.enableFeature();
+
+          if(this.core.napFeature){
+            this.core.napFeature.enableFeature();
+          }
         },
 
         onClick: function(e){
@@ -94,10 +99,10 @@
                 n, m, sep_total = total, sep;
 
             if(total > 1){
-                measure.unit = 'mi';
+                measure.unit = this.UNIT;
 
             } else {
-                measure.unit = 'ft';
+                measure.unit = this.SUB_UNIT;
                 sep_total = this.SUB_UNIT_CONV * total;
             }
 

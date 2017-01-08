@@ -20,7 +20,7 @@ gulp.task('build', ['clean:dist'], function() {
       'src/features/node.js',
       'src/features/line.js',
       'src/features/poly.js',
-      'src/features/measure.js',
+      'src/features/ruler.js',
       'src/features/style.js',
       'src/features/trash.js',
       'src/handlers.js',

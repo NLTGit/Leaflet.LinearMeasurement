@@ -8,8 +8,7 @@
             position: 'topleft',
             color: '#4D90FE',
             fillColor: '#fff',
-            type: 'node',
-            features: ['node', 'line', 'polygon', 'ruler', 'paint', 'drag', 'rotate', 'nodedrag', 'trash'],
+            features: ['node', 'line', 'poly', 'ruler', 'nap', 'label', 'style', 'drag', 'trash'],
             pallette: ['#FF0080', '#4D90FE', 'red', 'blue', 'green', 'orange', 'black'],
             dashArrayOptions: ['5, 5', '5, 10', '10, 5', '5, 1', '1, 5', '0.9', '15, 10, 5', '15, 10, 5, 10', '15, 10, 5, 10, 15', '5, 5, 1, 5'],
             fill: true,
@@ -31,9 +30,14 @@
         onAdd: function (map) {
             var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
                 map_container = map.getContainer(),
-                me = this;
+                me = this,
+                cls = 'draw';
 
-            this.link = L.DomUtil.create('a', 'icon-draw', container);
+            if(this.options.features && this.options.features.length === 1){
+              cls = me.options.features[0];
+            }
+
+            this.link = L.DomUtil.create('a', 'icon-'+cls, container);
 
             this.link.href = '#';
             this.link.title = '';
@@ -86,41 +90,62 @@
             this.resetRuler(true);
         },
 
+        verifyFeatureName: function(f){
+          var features = ['node', 'label', 'nap', 'line', 'poly', 'ruler', 'style', 'trash', 'drag', 'trash'];
+
+          if(this.featureMap[f]){
+            return false;
+          } else {
+            this.featureMap[f] = true;
+          }
+
+          for(var i in features){
+            if(features[i] === f){
+              return true;
+            }
+          }
+
+          return false;
+        },
+
         /* */
 
         initRuler: function(container){
             var me = this,
                 map = this._map;
 
-            this.features = this.options.features;
+            this.featureMap = {};
+            this.features = [];
+
+            for(var j in this.options.features){
+              this.features.push(this.options.features[j]);
+            }
 
             /* Initialize old version of features */
 
             this.featureList = [];
 
-            this.nodeFeature = new L.Class.NodeFeature(this);
-            this.featureList.push(this.nodeFeature);
+            this.originalFeaturesCount = this.features.length;
 
-            this.napFeature = new L.Class.NapFeature(this);
-            this.featureList.push(this.napFeature);
+            /* Features are base for everything else for now */
 
-            this.lineFeature = new L.Class.LineFeature(this);
-            this.featureList.push(this.lineFeature);
+            if(this.originalFeaturesCount === 1){
+              this.features.push('node');
+              this.features.push('label');
+            }
 
-            this.polyFeature = new L.Class.PolyFeature(this);
-            this.featureList.push(this.polyFeature);
+            var f;
 
-            this.rulerFeature = new L.Class.MeasurementFeature(this);
-            this.featureList.push(this.rulerFeature);
+            for(var i in this.features){
+              f = this.features[i];
 
-            this.labelFeature = new L.Class.LabelFeature(this, map);
-            this.featureList.push(this.labelFeature);
-
-            this.featureList.push(new L.Class.StyleFeature(this));
-
-            this.featureList.push(new L.Class.TrashFeature(this));
-
-            this.featureList.push(new L.Class.DragFeature(this));
+              if(this.verifyFeatureName(f)){
+                this[f+'Feature'] = eval('new L.Class.'+this.capString(f)+'Feature(this, this._map)');
+                this.featureList.push(this[f+'Feature']);
+              } else {
+                console.log('One or more feature is invalid: ' + f);
+              }
+            }
 
             this.mainLayer = L.featureGroup();
             this.mainLayer.addTo(this._map);

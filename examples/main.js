@@ -22,11 +22,11 @@ var Core = L.Control.LinearCore.extend({
         if(!e.total){
           return;
         }
-        
+
         var distance = e.total.scalar;
 
         if(e.total.unit === 'mi'){
-            distance *= e.sub_unit;
+            distance *= 5280;
 
         } else if(e.total.unit === 'km'){
             distance *= 3280.84;
@@ -51,7 +51,7 @@ var Core = L.Control.LinearCore.extend({
 });
 
 map.addControl(new Core({
-  unitSystem: 'imperial',
+  unitSystem: 'metric',
   color: '#FF0080',
-  type: 'line'
+  _features: ['ruler']
 }));

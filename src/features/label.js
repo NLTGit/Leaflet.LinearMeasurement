@@ -3,7 +3,7 @@
     L.Class.LabelFeature = L.Class.Feature.extend({
 
         options: {
-          name: 'paint'
+          name: 'label'
         },
 
         initialize: function (core, map) {
@@ -72,15 +72,28 @@
         drawTooltipHandlers: function(e, layer, label){
             var me = this,
                 workspace = layer,
-                title = label ? label : 'Untitled'
-                isRuler = label && (label.indexOf(' ft') !== -1 || label.indexOf(' mi') !== -1),
+                title = label ? label : 'Untitled',
+                isRuler = layer.options.type === 'ruler',
                 map = this.core._map;
+
+            var disect = layer.options.title.split(' ');
+
+            var total = {
+              scalar: disect[0],
+              unit: disect[1]
+            }
+
+            /* Leaflet return distances in meters */
+            this.SUB_UNIT_CONV = 1000;
+
+            if(this.options.unitSystem === 'imperial'){
+                this.SUB_UNIT_CONV = 5280;
+            }
 
             var data = {
                 latlng: e.latlng,
-                total: this.measure,
+                total: total,
                 total_label: layer.total,
-                unit: this.UNIT_CONV,
                 sub_unit: this.SUB_UNIT_CONV,
                 workspace: workspace,
                 rulerOn: isRuler
@@ -110,13 +123,10 @@
             };
 
             var fireSelected = function(e){
-                var map = me.map;
 
                 me.core.selectedLayer = workspace;
 
                 workspace.fireEvent('selected', data);
-
-                var target_layer = layer;
 
                 /* We don't want to edit measurement tool labels */
 
@@ -124,7 +134,9 @@
                     return;
                 }
 
-                var label_field = '',
+                var map = me.map,
+                    target_layer = layer,
+                    label_field = '',
                     parent = layer.total._icon.children[0],
                     children = parent.children,
                     input;
@@ -188,7 +200,7 @@
 
             workspace.on('click', closeme);
 
-            workspace.on('selected', this.onSelect);
+            workspace.on('selected', this.core.onSelect);
 
             /* Only fire to auto-focus newly created path */
 

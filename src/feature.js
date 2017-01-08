@@ -14,6 +14,10 @@
       includes: [Utils],
 
       initialize: function (core) {
+        /* We have to do a better job filtering out unreleated options */
+
+        L.Util.extend(this.options, core.options);
+
         this.options.color = core.options.color;
         this.core = core;
         this._map = core._map;
@@ -41,6 +45,7 @@
       },
 
       resetFeature: function(){
+
       },
 
       onClick: function(e){
@@ -121,25 +126,35 @@
               activeFn = this.enableFeature,
               cap = this.capString(feature);
 
-          this.control = L.DomUtil.create('a', 'icon-'+feature, core.container);
-
-          this.control.href = '#';
-
-          this.control.title = '';
-
           this._map = core._map;
 
-          L.DomEvent.on(this.control, 'click', function(){
-              if(me[feature+'Enable']){
-                  inactiveFn.call(me);
-              } else {
-                  activeFn.call(me);
-              }
-          });
+
+          if(core.originalFeaturesCount === 1){
+            if(core.features[0] === this.options.name){
+              L.Class.Feature.prototype.enableFeature.call(this);
+            }
+
+          } else {
+            this.control = L.DomUtil.create('a', 'icon-'+feature, core.container);
+
+            this.control.href = '#';
+
+            this.control.title = '';
+
+            L.DomEvent.on(this.control, 'click', function(){
+                if(me[feature+'Enable']){
+                    inactiveFn.call(me);
+                } else {
+                    activeFn.call(me);
+                }
+            });
+          }
         },
 
         destroy: function(){
-            L.DomUtil.remove(this.control);
+            if(this.control){
+              L.DomUtil.remove(this.control);
+            }
         },
 
         isEnabled: function(){

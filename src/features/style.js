@@ -3,7 +3,7 @@
     L.Class.StyleFeature = L.Class.ControlFeature.extend({
 
         options: {
-          name: 'paint',
+          name: 'style',
           pallette: ['#FF0080', '#4D90FE', 'red', 'blue', 'green', 'orange', 'black'],
           dashArrayOptions: ['5, 5', '5, 10', '10, 5', '5, 1', '1, 5', '0.9', '15, 10, 5', '15, 10, 5, 10', '15, 10, 5, 10, 15', '5, 5, 1, 5']
         },

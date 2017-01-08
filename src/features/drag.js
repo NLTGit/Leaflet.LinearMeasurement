@@ -23,14 +23,22 @@
         enableFeature: function(){
             L.Class.ControlFeature.prototype.enableFeature.call(this);
             this.core._map.dragging.disable();
-            this.core.napFeature.disableFeature();
+
+            if(this.core.napFeature){
+              this.core.napFeature.disableFeature();
+            }
+            
             this.initialPreparation();
         },
 
         disableFeature: function(){
             L.Class.ControlFeature.prototype.disableFeature.call(this);
             this.core._map.dragging.enable();
-            this.core.napFeature.enableFeature();
+
+            if(this.core.napFeature){
+              this.core.napFeature.enableFeature();
+            }
+
             this.cleanup();
         },
 
