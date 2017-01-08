@@ -126,11 +126,10 @@
 
                 me.core.selectedLayer = workspace;
 
-                workspace.fireEvent('selected', data);
-
                 /* We don't want to edit measurement tool labels */
 
                 if(isRuler) {
+                    workspace.fireEvent('selected', data);
                     return;
                 }
 
