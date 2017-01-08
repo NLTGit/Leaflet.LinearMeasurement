@@ -149,6 +149,8 @@
                 }
             });
           }
+
+          this.options.type = 'control';
         },
 
         destroy: function(){
