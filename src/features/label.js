@@ -76,8 +76,6 @@
                 isRuler = label && (label.indexOf(' ft') !== -1 || label.indexOf(' mi') !== -1),
                 map = this.core._map;
 
-            console.log(this._map);
-
             var data = {
                 latlng: e.latlng,
                 total: this.measure,
@@ -153,14 +151,14 @@
                       fn1();
                     } else {
                       label_field.innerHTML = input.value || '&nbsp;';
-                      w = label_field.offsetWidth + 7;
+                      w = label_field.offsetWidth;
                       input.style.width = w + 'px';
                     }
                 };
 
                 for(var n in children){
                     if(!children[n].nodeName) {
-                      return;
+                      break;
                     }
 
                     if(L.DomUtil.hasClass(children[n], 'tip-layer')){
@@ -177,7 +175,7 @@
                     }
                 }
 
-                var w = label_field.offsetWidth + 7;
+                var w = label_field.offsetWidth;
 
                 input.style.width = w + 'px';
             };

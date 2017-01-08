@@ -21,8 +21,6 @@ var Handlers = {
           this.initLayer();
       }
 
-      L.DomEvent.stop(e);
-
       if(this.isDblClick()){
 
           this.onDblClick(e);

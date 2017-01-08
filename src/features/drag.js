@@ -22,15 +22,16 @@
 
         enableFeature: function(){
             L.Class.ControlFeature.prototype.enableFeature.call(this);
-            this.core._map.on('mousedown', this.startDragging, this);
-            this.initialPreparation();
             this.core._map.dragging.disable();
+            this.core.napFeature.disableFeature();
+            this.initialPreparation();
         },
 
         disableFeature: function(){
             L.Class.ControlFeature.prototype.disableFeature.call(this);
-            this.core._map.off('mousedown', this.startDragging, this);
             this.core._map.dragging.enable();
+            this.core.napFeature.enableFeature();
+            this.cleanup();
         },
 
         onClick: function(e){
@@ -40,26 +41,84 @@
         },
 
         initialPreparation: function(){
-            var me = this;
+            var me = this,
+                map = this.core._map;
 
             /* Dragging shape when fill line is present in polygon */
 
             var fn = function(l, e, layer){
+                var fn1 = function(e){
+                  me.selectedLayer = layer;
+                };
+
                 if(l.options.type === 'line' || l.options.type === 'polygon'){
-
-                    l.on('mousedown', function(){
-                        //me.core._map.dragging.disable();
-                        me.selectedLayer = layer;
-                    });
-
-                    /*l.on('mouseup', function(){
-                        me.core._map.dragging.enable();
-                    });*/
-
+                    l.fn = fn1;
+                    l.on('mousedown', fn1, me);
                 }
             };
 
             this.checkSorroundings({}, fn);
+
+
+            map.on('mousedown', this.mapStartDrag, this);
+
+            map.on('mousemove', this.mapDrag, this);
+
+            map.on('mouseout', this.mapStopDrag, this);
+
+            map.on('mouseup', this.mapStopDrag, this);
+        },
+
+        cleanup: function(){
+            var me = this,
+                map = this.core._map;
+
+            var fn = function(l, e, layer){
+                if(l.options.type === 'line' || l.options.type === 'polygon'){
+                    l.off('mousedown', l.fn, me);
+                }
+            };
+
+            this.checkSorroundings({}, fn);
+
+            map.off('mousedown', this.mapStartDrag, this);
+
+            map.off('mousemove', this.mapDrag, this);
+
+            map.off('mouseout', this.mapDrag, this);
+
+            map.off('mouseup', this.mapDrag, this);
+        },
+
+        mapStartDrag: function(e){
+            var me = this;
+
+            this.startDragging(e);
+
+            if(!this.selectedLayer && !this.selectedNode && e.originalEvent.target.nodeName !== 'path'){
+              me.mapDragging = true;
+            }
+        },
+
+        mapDrag: function(e){
+            var me = this, pos, dragPower = 7, map = me.core._map;
+
+            if(me.mapDragging){
+              pos = map.latLngToContainerPoint(map.getCenter());
+              pos.x -= e.originalEvent.movementX * dragPower;
+              pos.y -= e.originalEvent.movementY * dragPower;
+              map.setView(map.containerPointToLatLng(pos));
+
+            } else {
+              if(this.selectedLayer || this.selectedNode){
+                this.dragLayer(e);
+              }
+            }
+        },
+
+        mapStopDrag: function(e){
+            this.stopDragging();
+            this.mapDragging = false;
         },
 
         startDragging: function(e){
@@ -94,7 +153,6 @@
 
                         if(latlng.equals(e.latlng, 0.003)){
                             me.selectedLayer = layer;
-                            //me.core._map.dragging.disable();
                             return;
                         }
                     }
@@ -102,9 +160,6 @@
             };
 
             this.checkSorroundings(e, fn);
-
-            this.core._map.on('mousemove', this.dragLayer, this);
-            this.core._map.on('mouseup', this.stopDragging, this);
         },
 
         getSegments: function(latlngs){
@@ -125,7 +180,6 @@
 
         stopDragging: function(e){
             var me = this;
-            //this.core._map.dragging.enable();
             this.selectedNode = null;
             this.selectedLayer = null;
             this.core._map.off('mousemove', this.dragLayer, this);
@@ -133,6 +187,8 @@
         },
 
         dragLayer: function(e){
+            var me = this;
+
             this.dx = e.originalEvent.movementX;
             this.dy = e.originalEvent.movementY;
 
@@ -230,9 +286,11 @@
             var me = this,
                 layer = this.core.mainLayer;
 
-            layer.eachLayer(function(l){
-                me.checkLayerGroup(l, e, fn);
-            });
+            if(layer){
+                layer.eachLayer(function(l){
+                    me.checkLayerGroup(l, e, fn);
+                });
+            }
         },
 
         checkLayerGroup: function(layer, e, fn){
