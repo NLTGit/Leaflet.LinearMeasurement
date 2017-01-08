@@ -53,5 +53,5 @@ var Core = L.Control.LinearCore.extend({
 map.addControl(new Core({
   unitSystem: 'imperial',
   color: '#FF0080',
-  type: 'line'
+  features: ['ruler']
 }));
