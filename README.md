@@ -2,15 +2,15 @@
 
 <ul>
 
-  <li>This plugin is a measuring tool that indicates interval marks along the Polyline path</li>
+  <li>This plugin is a measuring tool that shows interval marks along the polyline path.</li>
 
-  <li>A tooltip at the end of the last segment indicate the total distance of all segments.</li>
+  <li>A tooltip at the end of the last segment indicates the total distance of all segments in a polyline.</li>
 
-  <li>It is possible to create multiple measure paths.</li>
+  <li>It is possible to create multiple polylines on the same map.</li>
 
-  <li>Double click event will end a multi line of paths</li>
+  <li>Double click event will complete the creation of a polyline and allow the creation of a new polyline.</li>
 
-  <li>The ruler paths can be individually removed from map</li>
+  <li>The polylines can be individually removed from the map.</li>
 
 </ul>
 
