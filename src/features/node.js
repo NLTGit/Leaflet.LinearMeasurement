@@ -32,6 +32,10 @@
             if(type != 'node'){
                 r = 1;
                 color = 'blue';
+
+                if(type === 'dot'){
+                  color = 'white';
+                }
             }
 
             var options = config || {
@@ -67,9 +71,13 @@
 
             p_latLng = this.core._map.containerPointToLatLng(p);
 
+            if(options.type === 'dot'){
+              color = 'blue';
+            }
+
             if(label){
                 var cicon = L.divIcon({
-                    className: 'total-popup-label',
+                    className: options.type === 'dot' ? 'total-popup-label-dot' : 'total-popup-label',
                     html: this.getIconLabelHtml(label, color)
                 });
 

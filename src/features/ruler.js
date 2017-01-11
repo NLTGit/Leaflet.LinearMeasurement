@@ -66,17 +66,21 @@
             var latlngs = e ? this.latlngs.concat([e.latlng]) : this.latlngs,
                 prev,
                 total = 0,
-                dimension = 0;
+                dimension = 0,
+                is_last = false;
 
             total = this.getStaticSum(latlngs);
+
             this.cleanUpTmp(layer);
 
             if(latlngs.length > 1){
 
                 for(var s in latlngs){
 
+                    is_last = latlngs[s].equals(latlngs[latlngs.length - 1]);
+
                     if(prev) {
-                        dimension += this.displayMarkers.apply(this, [[prev, latlngs[s]], true, dimension, layer, total]);
+                        dimension += this.displayMarkers.apply(this, [[prev, latlngs[s]], true, dimension, layer, total, is_last]);
                     }
 
                     prev = latlngs[s];
@@ -84,11 +88,11 @@
             }
         },
 
-        displayMarkers: function(latlngs, multi, sum, layer, total) {
-
+        displayMarkers: function(latlngs, multi, sum, layer, total, is_last) {
             var x, y, label, ratio, p,
                 latlng = latlngs[1],
                 prevLatlng = latlngs[0],
+                latlng_tmp,
                 original = prevLatlng.distanceTo(latlng)/this.UNIT_CONV,
                 dis = original,
                 measure = layer.measure || this.measure;
@@ -96,7 +100,9 @@
             var p2 = this.core._map.latLngToContainerPoint(latlng),
                 p1 = this.core._map.latLngToContainerPoint(prevLatlng),
                 unit = 1,
-                n, m, sep_total = total, sep;
+                n, m,
+                sep,
+                sep_total = total;
 
             if(total > 1){
                 measure.unit = this.UNIT;
@@ -133,15 +139,20 @@
 
                 /* render a circle spaced by separation */
 
-                latlng = this.core._map.containerPointToLatLng(p);
+                latlng_tmp = this.core._map.containerPointToLatLng(p);
 
                 label = (q + ' ' + un);
 
                 if(q) {
-                    this.renderCircle(latlng, layer, 'tmp', label, false, false);
+                    this.renderCircle(latlng_tmp, layer, 'tmp', label, false, false);
                 }
 
                 this.last = t;
+            }
+
+            if(!is_last){
+              var dot_label = ( (qu + original).toFixed(2) + ' ' + un);
+              this.renderCircle(latlng, layer, 'dot', dot_label, false, false);
             }
 
             return original;
@@ -225,7 +236,7 @@
         clearAll: function(layer){
             if(layer){
                 layer.eachLayer(function(l){
-                    if(l.options && l.options.type === 'tmp' || l.options.type === 'fixed' || l.options.type === 'label'){
+                    if(l.options && (l.options.type === 'dot' || l.options.type === 'tmp' || l.options.type === 'fixed' || l.options.type === 'label') ){
                         layer.removeLayer(l);
                     }
                 });
@@ -235,7 +246,7 @@
         cleanUpTmp: function(layer){
           if(layer){
               layer.eachLayer(function(l){
-                  if(l.options && l.options.type === 'tmp'){
+                  if(l.options && (l.options.type === 'dot' || l.options.type === 'tmp')){
                       layer.removeLayer(l);
                   }
               });
