@@ -102,17 +102,19 @@
                 unit = 1,
                 n, m,
                 sep,
-                sep_total = total;
+                sep_total = total,
+                minor = true;
 
             if(total > 1){
                 measure.unit = this.UNIT;
-
+                minor = false;
             } else {
+                minor = true;
                 measure.unit = this.SUB_UNIT;
                 sep_total = this.SUB_UNIT_CONV * total;
             }
 
-            sep = this.getSeparation(sep_total);
+            sep = this.getSeparation(sep_total, minor);
 
             measure.scalar = sep_total.toFixed(2);
 
@@ -158,14 +160,18 @@
             return original;
         },
 
-        getSeparation: function(total){
-            var sep, n, m;
+        getSeparation: function(total, minor){
+            var n = (parseInt(total)+'').length,
+                m = Math.pow(10, n),
+                div = 5,
+                sep = m/10;
 
-            n = (parseInt(total)+'').length;
-            m = Math.pow(10, n);
-            sep = m/10;
+            if(minor){
+                div = 2;
+            }
+
             if((sep * 5) > total){
-              sep = parseInt(sep / 5);
+              sep = parseInt(sep / div);
             }
 
             return sep;
