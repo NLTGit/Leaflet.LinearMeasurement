@@ -131,11 +131,15 @@ var Geo = {
         };
 
         for(var g in geos){
-            if(id && id !== geos[g].properties.id || geos[g].properties.hidden){
+            if(id && (!geos[g].properties || id !== geos[g].properties.id || geos[g].properties.hidden)){
                 continue;
             }
 
             props = geos[g].properties;
+
+            if(!props){
+                continue;
+            }
 
             gLayer = L.geoJson(geos[g], {
                 id: props.id,

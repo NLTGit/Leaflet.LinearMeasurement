@@ -52,6 +52,14 @@
                     me.initRuler(container);
                     L.DomUtil.addClass(me.link, 'icon-active');
                     L.DomUtil.addClass(map_container, 'ruler-map');
+                } else {
+                    me.resetRuler();
+
+                    me.mainLayer.eachLayer(function(l){
+                      me.mainLayer.removeLayer(l);
+                    });
+
+                    me.plotGeoJsons();
                 }
             });
 
@@ -196,7 +204,7 @@
         resetRuler: function(resetLayer){
             var map = this._map;
 
-            if(resetLayer){
+            if(resetLayer && this.mainLayer){
                 map.off('click', this.clickEventFn, this);
                 map.off('mousemove', this.moveEventFn, this);
                 map.off('dblclick', this.dblClickEventFn, map);
