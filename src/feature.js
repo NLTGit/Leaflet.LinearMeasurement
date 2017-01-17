@@ -136,8 +136,6 @@
           } else {
             this.control = L.DomUtil.create('a', 'icon-'+feature, core.container);
 
-            //this.control.href = '#';
-
             this.control.title = '';
 
             L.DomEvent.on(this.control, 'click', function(e){
@@ -187,12 +185,6 @@
         },
 
         onClick: function(e){
-            this.core.layer.options.type = this.options.name;
-            this.core.layer.options.title = 'Untitled';
-            this.core.layer.options.description = '...';
-
-            this.core.selectedLayer = this.core.layer;
-
             L.Class.Feature.prototype.onClick.call(this, e);
 
             var me = this,

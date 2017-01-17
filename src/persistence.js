@@ -3,13 +3,8 @@ var Geo = {
     repaintGeoJson: function(layer){
       if(layer && layer.options.id){
           var id = layer.options.id;
-
           this.mainLayer.removeLayer(layer);
-
-          this.deleteGeoJson(id, true);
-
-          this.persistGeoJson(layer, true);
-
+          this.persistGeoJson(layer);
           this.plotGeoJsons(id, true);
       }
     },
@@ -22,7 +17,7 @@ var Geo = {
         var geos = this.getGeoJsons();
 
         for(var g in geos){
-            if(geos[g].properties.id === id){
+            if(geos[g].properties.id == id){
                 geos[g].index = parseInt(g);
                 return geos[g];
             }
@@ -38,7 +33,10 @@ var Geo = {
         if(geo){
            geos.splice(geo.index, 1);
            this.saveGeoJsons(geos, bypass);
+           return true;
         }
+
+        return false;
     },
 
     purgeGeoJsons: function(){
@@ -55,8 +53,11 @@ var Geo = {
     },
 
     updateGeoJson: function(geo, bypass){
-        this.deleteGeoJson(geo.properties.id, true);
-        this.insertGeoJson(geo, bypass);
+        if(this.deleteGeoJson(geo.properties.id, true)){
+          this.insertGeoJson(geo, bypass);
+        } else {
+          console.log('Could not update because identifier not found');
+        }
     },
 
     insertGeoJson: function(geo, bypass){
@@ -74,21 +75,16 @@ var Geo = {
 
         layer.options.id = id;
 
-        if(this.poly){
-            layer.removeLayer(this.poly);
-        }
-
         layer.eachLayer(function(l){
             g = l.toGeoJSON();
-
             g.properties.styles = l.options;
-
             features.push(g);
         });
 
         // Do not store empty layers...
 
         if(features.length){
+
             geo = {
                 type: "FeatureCollection",
                 properties: {
@@ -167,7 +163,6 @@ var Geo = {
 
             if(repaint){
               this.selectedLayer = gLayer;
-              this.layer = gLayer;
             }
         }
     }

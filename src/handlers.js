@@ -20,7 +20,6 @@ var Handlers = {
       this.layer = this.layer;
 
       if(!this.layer){
-          console.log('click 1');
           this.initLayer();
       }
 

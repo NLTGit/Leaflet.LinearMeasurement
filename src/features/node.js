@@ -10,6 +10,11 @@
             var ret = L.Class.ControlFeature.prototype.onClick.call(this, e);
 
             if(ret){
+                this.core.layer.options.type = this.options.name;
+                this.core.layer.options.title = 'Untitled';
+                this.core.layer.options.description = '...';
+                this.core.selectedLayer = this.core.layer;
+                
                 /* When feature is enabled a click on the feature button should not proceed */
 
                 if(L.DomUtil.hasClass(e.originalEvent.target, 'icon-node')){

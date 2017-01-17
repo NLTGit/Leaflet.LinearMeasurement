@@ -10,7 +10,6 @@
 
         enableFeature: function(){
           L.Class.ControlFeature.prototype.enableFeature.call(this);
-          this.core._map.dragging.disable();
           this.buildPaintPane();
         },
 
@@ -59,8 +58,6 @@
                 options = { };
 
             if(layer){
-                this.core.layer = layer;
-
                 options[option] = me.core.options[option];
 
                 if(layer.setStyle){
@@ -126,6 +123,14 @@
                 map = this.core._map.getContainer();
 
             this.paintPane = L.DomUtil.create('div', 'paint-pane', map);
+
+            this.paintPane.addEventListener('mouseover', function(e){
+                me.core._map.dragging.disable();
+            });
+
+            this.paintPane.addEventListener('mouseout', function(e){
+                me.core._map.dragging.enable();
+            });
 
             this.buildPaneHeader();
 
@@ -193,28 +198,11 @@
             });
 
             this.buildPaneSection('dashArray', function(){
-                me.paintDashArray.addEventListener('click', function(e){
+                me.paintDashArray.addEventListener('change', function(e){
                     L.DomEvent.stop(e);
-
                     if(L.DomUtil.hasClass(e.target, 'clickable')){
-                        var parent = e.target.nodeName === 'svg' ? e.target : e.target.parentElement,
-                            children = parent.childNodes;
-
-                        var h = Math.round((e.offsetY-10) / 20);
-
-                        for(var n in children){
-                            if(me.isElement(children[n]) || children[n].nodeName){
-                                L.DomUtil.removeClass(children[n], 'line-selected');
-                            }
-                        }
-
-                        var target = children[h];
-
-                        if(target){
-                          L.DomUtil.addClass(children[h], 'line-selected');
-                          me.core.options.dashArray = children[h].getAttribute('stroke-dasharray').replace(/,/g, '');
-                          me.onPaintChange('dashArray');
-                        }
+                        me.core.options.dashArray = e.target.value.replace(/,/g, '');
+                        me.onPaintChange('dashArray');
                     }
                 });
             });
@@ -249,7 +237,6 @@
                         flag = e.target.getAttribute('flag');
 
                     me.core.options[flag] = v;
-
                     me.onPaintChange(flag);
                 }
             }
@@ -373,17 +360,14 @@
 
             for(var d in dashes){
                 selected = this.core.options.dashArray === dashes[d] ? 'line-selected' : '';
-
-                content.push('<option>');
-                content.push(' <svg class="section-body clickable" width="100" height="20" viewPort="0 0 20 160" version="1.1" xmlns="http://www.w3.org/2000/svg">');
-                content.push('  <line class="clickable pain-lines '+selected+'" stroke-dasharray="'+dashes[d]+'" x1="0" y1="'+y+'" x2="160" y2="'+y+'" />');
-                content.push(' </svg>');
+                content.push('<option class="clickable" value="'+dashes[d]+'">');
+                content.push(dashes[d]);
                 content.push('</option>');
             }
 
             var html = [
                 '<span class="section-header">Dash Array </span>',
-                '<select style="width: 120px;">',
+                '<select style="width: 120px;" class="clickable">',
                   content.join(''),
                 '</select>'
             ].join('');
