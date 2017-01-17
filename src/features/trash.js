@@ -15,8 +15,6 @@
 
             this.core.purgeGeoJsons();
 
-            this.core._map.fire('shape_changed');
-
             me.core.resetRuler();
 
             setTimeout(function(){

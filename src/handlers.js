@@ -17,12 +17,14 @@ var Handlers = {
   getMouseClickHandler: function(e){
       var isNode = false;
 
+      this.layer = this.layer;
+
       if(!this.layer){
+          console.log('click 1');
           this.initLayer();
       }
 
       if(this.isDblClick()){
-
           this.onDblClick(e);
 
       } else {

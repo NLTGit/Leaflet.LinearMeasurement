@@ -10,11 +10,13 @@
 
         enableFeature: function(){
           L.Class.ControlFeature.prototype.enableFeature.call(this);
+          this.core._map.dragging.disable();
           this.buildPaintPane();
         },
 
         disableFeature: function(){
           L.Class.ControlFeature.prototype.disableFeature.call(this);
+          this.core._map.dragging.enable();
           this.disablePaint();
         },
 
@@ -27,51 +29,58 @@
         },
 
         disablePaint: function(){
+            this.dx = 0;
+
+            this.dy = 0;
+
+            this.core._map.off('mousemove', this.headerMouseMove, this);
+
+            this.core._map.off('mouseup', this.headerMouseStop, this);
+
+            this.core._map.off('mouseout', this.headerMouseStop, this);
+
             if(this.paintPane){
                 L.DomUtil.addClass(this.paintPane, 'hidden-el');
             }
         },
 
+        destroy: function(){
+            this.disableFeature();
+            L.Class.ControlFeature.prototype.destroy.call(this);
+        },
+
         onPaintChange: function(option){
-          this.affectSelectedLayer(option);
+            this.affectSelectedLayer(option);
         },
 
         affectSelectedLayer: function(option){
-          var me = this,
-              options = { };
+            var me = this,
+                layer = this.core.selectedLayer,
+                options = { };
 
-          options[option] = me.core.options[option];
+            if(layer){
+                this.core.layer = layer;
 
-          if(this.core.selectedLayer){
+                options[option] = me.core.options[option];
 
-            this.core.selectedLayer.eachLayer(function(layer){
                 if(layer.setStyle){
                     layer.setStyle(options);
-
-                } else {
-                    var cicon = layer.options.icon,
-                        color = options[option],
-                        label = '';
-
-                    if(layer.options.total && option === 'color'){
-                        label = me.core.selectedLayer.title;
-
-                        var html = me.getIconHtml(label, color);
-                        L.setOptions(cicon, { html: html });
-                        layer.setIcon(cicon);
-
-                    } else if(layer.options.type === 'fixed' && option === 'color') {
-                        label = layer.options.label;
-
-                        var html = me.getIconLabelHtml(label, color);
-                        L.setOptions(cicon, { html: html });
-                        layer.setIcon(cicon);
-                    }
                 }
-            });
 
-            this.core.persistGeoJson(this.core.selectedLayer, this.core.selectedLayer.options.simple);
-          }
+                me.core.repaintGeoJson(layer);
+            }
+        },
+
+        headerMouseMove: function(e){
+            if(this.hdragging){
+              this.dx += e.originalEvent.movementX;
+              this.dy += e.originalEvent.movementY;
+              L.DomUtil.setPosition(this.paintPane, { x: this.dx, y: this.dy });
+            }
+        },
+
+        headerMouseStop: function(e){
+            this.hdragging = false;
         },
 
         getIconHtml: function(label, color){
@@ -117,9 +126,6 @@
                 map = this.core._map.getContainer();
 
             this.paintPane = L.DomUtil.create('div', 'paint-pane', map);
-
-            var draggable = new L.Draggable(this.paintPane);
-            draggable.enable();
 
             this.buildPaneHeader();
 
@@ -215,12 +221,10 @@
 
             this.buildPaneSection('opacity', function(){
                 me.paintOpacity.addEventListener('mousedown', function(e){
-                    L.DomEvent.stop(e);
                     me.slidemove = true;
                 });
 
                 me.paintOpacity.addEventListener('mousemove', function(e){
-                    L.DomEvent.stop(e);
                     if(me.slidemove){
                       me.moveSlider(e);
                     }
@@ -228,12 +232,10 @@
 
                 me.paintOpacity.addEventListener('mouseup', function(e){
                     me.slidemove = false;
-                    L.DomEvent.stop(e);
                     me.moveSlider(e);
                 });
 
                 me.paintOpacity.addEventListener('click', function(e){
-                    L.DomEvent.stop(e);
                     me.moveSlider(e);
                 });
             });
@@ -243,13 +245,12 @@
             var me = this;
             if(L.DomUtil.hasClass(e.target, 'clickable')){
                 if(e.target.nodeName === 'INPUT'){
-                    var v = (e.offsetX / e.target.clientWidth);
-                    if(e.target.getAttribute('step') == '1'){
-                      v *= 10;
-                    }
-                    e.target.value = v;
-                    me.core.options[e.target.getAttribute('flag')] = e.target.value;
-                    me.onPaintChange(e.target.getAttribute('flag'));
+                    var v = e.target.value;
+                        flag = e.target.getAttribute('flag');
+
+                    me.core.options[flag] = v;
+
+                    me.onPaintChange(flag);
                 }
             }
         },
@@ -258,7 +259,10 @@
             var me = this;
 
             var header = [
-                '<span>Styling Options</span><i class="close">x</i>'
+                '<span>Styling Options</span>',
+                '<svg class="close style-close" viewbox="0 0 45 35">',
+                ' <path class="close" style="stroke:black" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
+                '</svg>'
             ].join('');
 
             this.paintPaneHeader = L.DomUtil.create('div', 'paint-pane-header', this.paintPane);
@@ -266,10 +270,25 @@
 
             this.paintPaneHeader.addEventListener('click', function(e){
                 L.DomEvent.stop(e);
-                if(e.target.nodeName === 'I'){
+                var tag = e.target.nodeName.toLowerCase();
+                if(tag === 'svg' || tag === 'path'){
                     me.disableFeature();
                 }
             });
+
+            me.dx = 0;
+            me.dy = 0;
+
+            this.paintPaneHeader.addEventListener('mousedown', function(e){
+                L.DomEvent.stop(e);
+                me.hdragging = true;
+            });
+
+            this.core._map.on('mousemove', this.headerMouseMove, this);
+
+            this.core._map.on('mouseup', this.headerMouseStop, this);
+
+            this.core._map.on('mouseout', this.headerMouseStop, this);
         },
 
         buildPaneSection: function(section, callback){
@@ -333,7 +352,7 @@
 
             for(var f in flags){
                 selected = this.core.options[flags[f]] ? 'checked' : '';
-                content.push('<div><input value="'+flags[f]+'" type="checkbox" '+selected+' class="clickable" flag="'+flags[f]+'"> Draw ' + flags[f] + '</div>');
+                content.push('<div><input value="'+flags[f]+'" type="checkbox" '+selected+' class="clickable" flag="'+flags[f]+'" /> Draw ' + flags[f] + '</div>');
             }
 
             var html = [
@@ -350,43 +369,56 @@
             var dashes = this.core.options.dashArrayOptions,
                 selected = '',
                 content = [],
-                y = 10;
+                y = 0;
 
             for(var d in dashes){
                 selected = this.core.options.dashArray === dashes[d] ? 'line-selected' : '';
-                content.push('<line class="clickable pain-lines '+selected+'" stroke-dasharray="'+dashes[d]+'" x1="10" y1="'+y+'" x2="160" y2="'+y+'" />');
-                y += 20;
+
+                content.push('<option>');
+                content.push(' <svg class="section-body clickable" width="100" height="20" viewPort="0 0 20 160" version="1.1" xmlns="http://www.w3.org/2000/svg">');
+                content.push('  <line class="clickable pain-lines '+selected+'" stroke-dasharray="'+dashes[d]+'" x1="0" y1="'+y+'" x2="160" y2="'+y+'" />');
+                content.push(' </svg>');
+                content.push('</option>');
             }
 
             var html = [
-                '<span class="section-header">Dash Array</span>',
-                '<svg class="section-body clickable" width="170" height="200" viewPort="0 0 200 160" version="1.1" xmlns="http://www.w3.org/2000/svg">',
+                '<span class="section-header">Dash Array </span>',
+                '<select style="width: 120px;">',
                   content.join(''),
-                '</svg>'
+                '</select>'
             ].join('');
 
             return html;
         },
 
         buildOpacitySection: function(){
-            var flags = ['opacity', 'fillOpacity', 'weight'],
+            var flags = ['opacity', 'fill Opacity', 'weight'],
                 selected = '',
                 content = [],
                 max = 0,
                 step = 0,
-                caps = '';
+                min = 0,
+                caps = '',
+                fg;
 
             for(var f in flags){
+
                 if(flags[f] === 'weight'){
                     max = 10;
                     step = 1;
+                    min = 1;
                 } else {
                     max = 1.0;
                     step = 0.1;
+                    min = 0.1;
                 }
+
                 content.push('<span class="section-header">'+this.capString(flags[f])+'</span>');
+
+                fg = flags[f].replace(' ', '');
+
                 content.push('<div class="section-body">');
-                content.push(' <div><input value="'+this.core.options[flags[f]]+'" type="range" min="0" max="'+max+'" step="'+step+'" class="clickable" flag="'+flags[f]+'"></div>');
+                content.push(' <div><input value="'+this.core.options[fg]+'" type="range" min="0" max="'+max+'" step="'+step+'" class="clickable" flag="'+fg+'" /></div>');
                 content.push('</div>');
             }
 

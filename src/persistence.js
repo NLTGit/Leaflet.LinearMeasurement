@@ -1,16 +1,16 @@
 var Geo = {
 
     repaintGeoJson: function(layer){
-      if(layer){
+      if(layer && layer.options.id){
           var id = layer.options.id;
 
           this.mainLayer.removeLayer(layer);
 
-          this.deleteGeoJson(id);
+          this.deleteGeoJson(id, true);
 
-          this.persistGeoJson(layer, layer.options.simple);
+          this.persistGeoJson(layer, true);
 
-          this.plotGeoJsons(id);
+          this.plotGeoJsons(id, true);
       }
     },
 
@@ -31,13 +31,13 @@ var Geo = {
         return null;
     },
 
-    deleteGeoJson: function(id){
+    deleteGeoJson: function(id, bypass){
         var geos = this.getGeoJsons(),
             geo = this.getGeoJson(id);
 
         if(geo){
            geos.splice(geo.index, 1);
-           this.saveGeoJsons(geos);
+           this.saveGeoJsons(geos, bypass);
         }
     },
 
@@ -45,24 +45,27 @@ var Geo = {
         this.saveGeoJsons([]);
     },
 
-    saveGeoJsons: function(geos){
+    saveGeoJsons: function(geos, bypass){
         geos = JSON.stringify(geos);
         sessionStorage.geos = geos;
-        this._map.fire('shape_changed');
+
+        if(!bypass){
+          this._map.fire('shape_changed');
+        }
     },
 
-    updateGeoJson: function(geo){
-        this.deleteGeoJson(geo.properties.id);
-        this.insertGeoJson(geo);
+    updateGeoJson: function(geo, bypass){
+        this.deleteGeoJson(geo.properties.id, true);
+        this.insertGeoJson(geo, bypass);
     },
 
-    insertGeoJson: function(geo){
+    insertGeoJson: function(geo, bypass){
         var geos = this.getGeoJsons();
         geos.push(geo);
-        this.saveGeoJsons(geos);
+        this.saveGeoJsons(geos, bypass);
     },
 
-    persistGeoJson: function(layer){
+    persistGeoJson: function(layer, bypass){
         var me = this,
             geo, g,
             features = [],
@@ -83,23 +86,27 @@ var Geo = {
             features.push(g);
         });
 
-        geo = {
-            type: "FeatureCollection",
-            properties: {
-                id: id,
-                hidden: false,
-                description: layer.options.description,
-                name: layer.options.title,
-                type: layer.options.type,
-                lastPoint: layer.options.lastPoint
-            },
-            features: features
-        };
+        // Do not store empty layers...
 
-        this[operation+'GeoJson'](geo);
+        if(features.length){
+            geo = {
+                type: "FeatureCollection",
+                properties: {
+                    id: id,
+                    hidden: false,
+                    description: layer.options.description,
+                    name: layer.options.title,
+                    type: layer.options.type,
+                    lastPoint: layer.options.lastPoint
+                },
+                features: features
+            };
+
+            this[operation+'GeoJson'](geo, bypass);
+        }
     },
 
-    plotGeoJsons: function(id){
+    plotGeoJsons: function(id, repaint){
         var me = this;
 
         this.resetRuler();
@@ -131,13 +138,13 @@ var Geo = {
         };
 
         for(var g in geos){
-            if(id && (!geos[g].properties || id !== geos[g].properties.id || geos[g].properties.hidden)){
+            props = geos[g].properties;
+
+            if(!props || props.hidden){
                 continue;
             }
 
-            props = geos[g].properties;
-
-            if(!props){
+            if(id && id !== props.id){
                 continue;
             }
 
@@ -156,6 +163,11 @@ var Geo = {
 
             if(props.lastPoint){
                 this.labelFeature.drawTooltip(props.lastPoint, gLayer, props.name);
+            }
+
+            if(repaint){
+              this.selectedLayer = gLayer;
+              this.layer = gLayer;
             }
         }
     }

@@ -26,8 +26,6 @@ var Utils = {
     },
 
     getIconLabelHtml: function(label, color){
-        var contrast = color === '#fff' ? 'black' : '#fff';
-
         var html = [
           '<span style="color: '+color+';">'+label+'</span>'
         ].join('');

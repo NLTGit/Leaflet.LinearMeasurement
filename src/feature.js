@@ -128,7 +128,6 @@
 
           this._map = core._map;
 
-
           if(core.originalFeaturesCount === 1){
             if(core.features[0] === this.options.name){
               L.Class.Feature.prototype.enableFeature.call(this);
@@ -137,11 +136,13 @@
           } else {
             this.control = L.DomUtil.create('a', 'icon-'+feature, core.container);
 
-            this.control.href = '#';
+            //this.control.href = '#';
 
             this.control.title = '';
 
-            L.DomEvent.on(this.control, 'click', function(){
+            L.DomEvent.on(this.control, 'click', function(e){
+                L.DomEvent.stop(e);
+
                 if(me[feature+'Enable']){
                     inactiveFn.call(me);
                 } else {

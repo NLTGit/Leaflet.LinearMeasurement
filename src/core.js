@@ -201,7 +201,7 @@
 
         /* */
 
-        resetRuler: function(resetLayer){
+        resetRuler: function(resetLayer){            
             var map = this._map;
 
             if(resetLayer && this.mainLayer){

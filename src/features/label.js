@@ -36,8 +36,16 @@
         drawTooltip: function(latlng, layer, label){
             layer.options.lastPoint = latlng;
 
-            var color = this.core.options.color,
-                html = this.getIconHtml(label, color);
+            var color = this.core.options.color;
+
+            layer.eachLayer(function(l){
+              if(l.options.color && (l.options.type === 'line' || l.options.type === 'polygon')){
+                color = l.options.color;
+                return;
+              }
+            });
+
+            var html = this.getIconHtml(label, color);
 
             layer.totalIcon = L.divIcon({ className: 'total-popup', html: html });
 
@@ -73,10 +81,10 @@
             var me = this,
                 workspace = layer,
                 title = label ? label : 'Untitled',
-                isRuler = layer.options.type === 'ruler',
+                isRuler = workspace.options.type === 'ruler',
                 map = this.core._map;
 
-            var disect = layer.options.title.split(' ');
+            var disect = workspace.options.title.split(' ');
 
             var total = {
               scalar: disect[0],
@@ -93,7 +101,7 @@
             var data = {
                 latlng: e.latlng,
                 total: total,
-                total_label: layer.total,
+                total_label: workspace.total,
                 sub_unit: this.SUB_UNIT_CONV,
                 workspace: workspace,
                 rulerOn: isRuler
@@ -108,6 +116,8 @@
             };
 
             var closeme = function(e){
+                me.core.selectedLayer = workspace;
+
                 var map = me.map;
 
                 L.DomEvent.stop(e);
@@ -118,14 +128,10 @@
 
                 if(e.originalEvent && L.DomUtil.hasClass(e.originalEvent.target, 'close')){
                     map.fire('shape_delete', { id: workspace.options.id });
-                    map.fire('shape_changed');
                 }
             };
 
             var fireSelected = function(e){
-
-                me.core.selectedLayer = workspace;
-
                 /* We don't want to edit measurement tool labels */
 
                 if(isRuler) {
@@ -134,9 +140,9 @@
                 }
 
                 var map = me.map,
-                    target_layer = layer,
+                    target_layer = workspace,
                     label_field = '',
-                    parent = layer.total._icon.children[0],
+                    parent = workspace.total._icon.children[0],
                     children = parent.children,
                     input;
 
@@ -144,9 +150,9 @@
                     L.DomUtil.addClass(input, 'hidden-el');
                     L.DomUtil.removeClass(label_field, 'hidden-el');
 
-                    layer.options.title = input.value;
+                    workspace.options.title = input.value;
 
-                    me.core.persistGeoJson(layer);
+                    me.core.persistGeoJson(workspace);
 
                     input.removeEventListener('blur', fn1);
                     input.removeEventListener('keyup', fn2);
@@ -191,10 +197,6 @@
                 input.style.width = w + 'px';
             };
 
-            /* TODO: Move this line */
-
-            this.core.persistGeoJson(layer);
-
             workspace.off('click');
 
             workspace.on('click', closeme);
@@ -204,6 +206,9 @@
             /* Only fire to auto-focus newly created path */
 
             if(workspace.is_new){
+
+                this.core.persistGeoJson(workspace);
+
                 fireSelected();
             }
         }
