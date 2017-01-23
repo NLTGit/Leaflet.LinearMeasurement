@@ -57,13 +57,14 @@
                 layer = this.core.selectedLayer,
                 options = { };
 
+            this.core._map.fire('style_changed', { key: option, value: me.core.options[option] });
+
             if(layer){
                 options[option] = me.core.options[option];
 
                 if(layer.setStyle){
                     layer.setStyle(options);
                 }
-
                 me.core.repaintGeoJson(layer);
             }
         },
