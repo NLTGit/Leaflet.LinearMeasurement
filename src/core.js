@@ -24,6 +24,7 @@
 
         includes: mixins,
         tik: 0, // used to calculate double click based on doubleClickSpeed option
+        defaultColor: '#4D90FE',
 
         /* Control Leaflet Cycle method implemented */
 
@@ -201,7 +202,7 @@
 
         /* */
 
-        resetRuler: function(resetLayer){            
+        resetRuler: function(resetLayer){
             var map = this._map;
 
             if(resetLayer && this.mainLayer){

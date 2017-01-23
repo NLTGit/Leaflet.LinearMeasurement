@@ -14,7 +14,7 @@
                 this.core.layer.options.title = 'Untitled';
                 this.core.layer.options.description = '...';
                 this.core.selectedLayer = this.core.layer;
-                
+
                 /* When feature is enabled a click on the feature button should not proceed */
 
                 if(L.DomUtil.hasClass(e.originalEvent.target, 'icon-node')){
@@ -30,7 +30,7 @@
         renderCircle: function(latLng, layer, type, label, skipLabel, config) {
             var color = this.options.color,
                 options = this.core.options,
-                r = 3;
+                r = options.radius;
 
             type = type || 'circle';
 
