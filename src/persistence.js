@@ -5,68 +5,60 @@ var Geo = {
           var id = layer.options.id;
           this.mainLayer.removeLayer(layer);
           this.persistGeoJson(layer);
-          this.plotGeoJsons(id, true);
+          this.plotGeoJsons(id);
       }
     },
 
     getGeoJsons: function(){
-        return sessionStorage.geos ? JSON.parse(sessionStorage.geos) : [];
+        var g = sessionStorage.geos;
+
+        if(!g || g.indexOf('null') !== -1){
+          sessionStorage.geos = '{}';
+        }
+
+        return JSON.parse(sessionStorage.geos);
     },
 
     getGeoJson: function(id){
         var geos = this.getGeoJsons();
 
-        for(var g in geos){
-            if(geos[g].properties.id == id){
-                geos[g].index = parseInt(g);
-                return geos[g];
-            }
-        }
-
-        return null;
+        return geos[id];
     },
 
-    deleteGeoJson: function(id, bypass){
-        var geos = this.getGeoJsons(),
-            geo = this.getGeoJson(id);
+    updateGeoJson: function(geo){
+        var geos = this.getGeoJsons();
+        geos[geo.id] = geo;
+        geo.operation = 'update';
+        this._map.fire('shape_changed', geo);
+        this.saveGeoJsons(geos);
+    },
 
-        if(geo){
-           geos.splice(geo.index, 1);
-           this.saveGeoJsons(geos, bypass);
-           return true;
-        }
+    insertGeoJson: function(geo){
+        var geos = this.getGeoJsons();
+        geos[geo.id] = geo;
+        geo.operation = 'insert';
+        this._map.fire('shape_changed', geo);
+        this.saveGeoJsons(geos);
+    },
 
-        return false;
+    deleteGeoJson: function(id){
+      var geos = this.getGeoJsons();
+      delete geos[geo.id];
+      geo.operation = 'delete';
+      this._map.fire('shape_changed', geo);
+      this.saveGeoJsons(geos);
+    },
+
+    saveGeoJsons: function(geos){
+        geos = JSON.stringify(geos);
+        sessionStorage.geos = geos;
     },
 
     purgeGeoJsons: function(){
-        this.saveGeoJsons([]);
+        this.saveGeoJsons({});
     },
 
-    saveGeoJsons: function(geos, bypass){
-        geos = JSON.stringify(geos);
-        sessionStorage.geos = geos;
-
-        if(!bypass){
-          this._map.fire('shape_changed');
-        }
-    },
-
-    updateGeoJson: function(geo, bypass){
-        if(this.deleteGeoJson(geo.properties.id, true)){
-          this.insertGeoJson(geo, bypass);
-        } else {
-          console.log('Could not update because identifier not found');
-        }
-    },
-
-    insertGeoJson: function(geo, bypass){
-        var geos = this.getGeoJsons();
-        geos.push(geo);
-        this.saveGeoJsons(geos, bypass);
-    },
-
-    persistGeoJson: function(layer, bypass){
+    persistGeoJson: function(layer){
         var me = this,
             geo, g,
             features = [],
@@ -78,6 +70,9 @@ var Geo = {
         layer.eachLayer(function(l){
             g = l.toGeoJSON();
             g.properties.styles = l.options;
+            if(!g.id){
+              g.id = (new Date()).getTime() + Math.floor(1000 + Math.random() * 9000);
+            }
             features.push(g);
         });
 
@@ -86,6 +81,7 @@ var Geo = {
         if(features.length){
 
             geo = {
+                id: id,
                 type: "FeatureCollection",
                 properties: {
                     id: id,
@@ -98,7 +94,7 @@ var Geo = {
                 features: features
             };
 
-            this[operation+'GeoJson'](geo, bypass);
+            this[operation+'GeoJson'](geo);
         }
     },
 
