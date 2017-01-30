@@ -3,20 +3,21 @@ var Geo = {
     repaintGeoJson: function(layer){
       if(layer && layer.options.id){
           var id = layer.options.id;
-          this.mainLayer.removeLayer(layer);
           this.persistGeoJson(layer);
-          this.plotGeoJsons(id);
       }
     },
 
     getGeoJsons: function(){
         var g = sessionStorage.geos;
 
-        if(!g || g.indexOf('null') !== -1){
+        try {
+          g = JSON.parse(g);
+        } catch(err){
           sessionStorage.geos = '{}';
+          return {};
         }
 
-        return JSON.parse(sessionStorage.geos);
+        return g;
     },
 
     getGeoJson: function(id){
@@ -42,7 +43,9 @@ var Geo = {
     },
 
     deleteGeoJson: function(id){
-      var geos = this.getGeoJsons();
+      var geos = this.getGeoJsons(),
+          geo = geos[id];
+
       delete geos[geo.id];
       geo.operation = 'delete';
       this._map.fire('shape_changed', geo);
@@ -56,6 +59,47 @@ var Geo = {
 
     purgeGeoJsons: function(){
         this.saveGeoJsons({});
+    },
+
+    geoFromLayer: function(layer){
+        var me = this,
+            geo, g,
+            features = [],
+            operation = layer.options.id ? 'update' : 'insert',
+            id = layer.options.id || (new Date()).getTime();
+
+        layer.options.id = id;
+
+        layer.eachLayer(function(l){
+            g = l.toGeoJSON();
+            g.properties.styles = l.options;
+            if(!g.id){
+              g.id = (new Date()).getTime() + Math.floor(1000 + Math.random() * 9000);
+            }
+            features.push(g);
+        });
+
+        // Do not store empty layers...
+
+        if(features.length){
+
+            geo = {
+                id: id,
+                type: "FeatureCollection",
+                properties: {
+                    id: id,
+                    hidden: false,
+                    description: layer.options.description,
+                    name: layer.options.title,
+                    type: layer.options.type,
+                    lastPoint: layer.options.lastPoint
+                },
+                features: features
+            };
+
+        }
+
+        return geo;
     },
 
     persistGeoJson: function(layer){
@@ -130,6 +174,10 @@ var Geo = {
         };
 
         for(var g in geos){
+            if(!geos[g]){
+                continue;
+            }
+
             props = geos[g].properties;
 
             if(!props || props.hidden){
@@ -141,7 +189,7 @@ var Geo = {
             }
 
             gLayer = L.geoJson(geos[g], {
-                id: props.id,
+                id: geos[g].id || props.id,
                 pointToLayer: pointToLayerFn,
                 style: styleFn,
                 hidden: props.hidden,
@@ -161,5 +209,7 @@ var Geo = {
               this.selectedLayer = gLayer;
             }
         }
+
+
     }
 };

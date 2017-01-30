@@ -308,7 +308,9 @@
                 me.mainLayer.removeLayer(selected);
 
                 geo.properties.hidden = data.hidden;
+
                 geo.properties.name = data.name;
+                
                 geo.properties.description = data.description;
 
                 me.updateGeoJson(geo);
