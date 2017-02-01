@@ -4,6 +4,7 @@ var Geo = {
       if(layer && layer.options.id){
           var id = layer.options.id;
           this.persistGeoJson(layer);
+          this._map.fire('linear_feature_on');
       }
     },
 
