@@ -1,6 +1,6 @@
 var Geo = {
 
-    repaintGeoJson: function(layer){
+    repaintGeoJson: function(layer){      
       if(layer && layer.options.id){
           var id = layer.options.id;
           this.persistGeoJson(layer);

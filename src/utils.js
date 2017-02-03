@@ -49,12 +49,25 @@ var Utils = {
     /* */
 
     setUpColor: function(){
-        if(this.options.color.indexOf('#') === -1){
-            this.options.color = '#' + this.options.color;
-        }
+        var included = false,
+            pallette = this.options.pallette;
 
-        if(this.options.fillColor.indexOf('#') === -1){
-            this.options.fillColor = '#' + this.options.fillColor;
+        if(pallette && pallette.include){
+            included = pallette.includes(this.options.color);
+
+            if(!included){
+              if(this.options.color.indexOf('#') === -1){
+                  this.options.color = '#' + this.options.color;
+              }
+            }
+
+            included = pallette.includes(this.options.fillColor);
+
+            if(!included){
+              if(this.options.fillColor.indexOf('#') === -1){
+                  this.options.fillColor = '#' + this.options.fillColor;
+              }
+            }
         }
 
         this.includeColor(this.options.color);
