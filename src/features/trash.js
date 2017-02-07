@@ -6,6 +6,12 @@
           name: 'trash'
         },
 
+        enableFeature: function(){
+          L.Class.ControlFeature.prototype.enableFeature.call(this);
+
+          this.onClick();
+        },
+
         onClick: function(e){
             var me = this;
 
@@ -19,7 +25,7 @@
 
             setTimeout(function(){
                 me.disableFeature();
-            }, 100);
+            }, 200);
         }
 
     });

@@ -100,7 +100,18 @@
         },
 
         verifyFeatureName: function(f){
-          var features = ['node', 'label', 'nap', 'line', 'poly', 'ruler', 'style', 'trash', 'drag', 'trash'];
+          var features = [
+            'node',
+            'label',
+            'nap',
+            'line',
+            'poly',
+            'ruler',
+            'style',
+            'trash',
+            'drag',
+            'trash'
+          ];
 
           if(this.featureMap[f]){
             return false;
@@ -310,7 +321,7 @@
                 geo.properties.hidden = data.hidden;
 
                 geo.properties.name = data.name;
-                
+
                 geo.properties.description = data.description;
 
                 me.updateGeoJson(geo);

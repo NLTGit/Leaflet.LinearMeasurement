@@ -20,7 +20,8 @@ var Utils = {
     },
 
     beginClass: function(target, classes){
-        if(target.className && classes && target.className.indexOf && target.className.indexOf(classes) !== -1){
+        if(target.className && classes && target.className.indexOf &&
+          target.className.indexOf(classes) !== -1){
             return true;
         }
     },
