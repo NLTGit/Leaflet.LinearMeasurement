@@ -1,6 +1,6 @@
 var Geo = {
 
-    repaintGeoJson: function(layer){      
+    repaintGeoJson: function(layer){
       if(layer && layer.options.id){
           var id = layer.options.id;
           this.persistGeoJson(layer);
@@ -18,7 +18,11 @@ var Geo = {
           return {};
         }
 
-        return g;
+        if(!g){
+          return {};
+        } else {
+          return g;
+        }
     },
 
     getGeoJson: function(id){
@@ -108,7 +112,8 @@ var Geo = {
             geo, g,
             features = [],
             operation = layer.options.id ? 'update' : 'insert',
-            id = layer.options.id || (new Date()).getTime();
+            did = (new Date()).getTime(),
+            id = layer.options.id || did;
 
         layer.options.id = id;
 
@@ -128,6 +133,8 @@ var Geo = {
             geo = {
                 id: id,
                 type: "FeatureCollection",
+                is_updated: true,
+                is_new: (id+'').length === 13,
                 properties: {
                     id: id,
                     hidden: false,
