@@ -16,7 +16,7 @@
             var me = this;
 
             this.core.mainLayer.eachLayer(function(layer){
-                me.core.mainLayer.removeLayer(layer);
+                me.core._map.fire('shape_delete', { id: layer.options.id });
             });
 
             this.core.purgeGeoJsons();

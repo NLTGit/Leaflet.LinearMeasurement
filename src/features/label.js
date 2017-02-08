@@ -45,7 +45,7 @@
               }
             });
 
-            var html = this.getIconHtml(label, color);
+            var html = this.getIconHtml(label, color, layer);
 
             layer.totalIcon = L.divIcon({ className: 'total-popup', html: html });
 
@@ -53,19 +53,33 @@
                 icon: layer.totalIcon,
                 clickable: true,
                 total: true,
-                type: 'label'
+                type: 'label',
+                sid: 'tooltip'
             }).addTo(layer);
 
             this.drawTooltipHandlers({ latlng : latlng }, layer, label);
         },
 
-        getIconHtml: function(label, color){
+        getIconHtml: function(label, color, workspace){
             /* TODO: find a better solution for contrast based on background color */
+            var mainLayer = this.core.mainLayer;
 
             var contrast = color === '#fff' ? 'black' : '#fff';
 
+            var n = 0;
+
+            if(workspace){
+              mainLayer.eachLayer(function(workspace){
+                workspace.eachLayer(function(layer){
+                    if(layer.options.sid === 'tooltip'){
+                      n+=15;
+                    }
+                });
+              });
+            }
+
             var html = [
-                '<div class="total-popup-content" style="background-color:'+color+'; color: '+contrast+';">',
+                '<div class="total-popup-content" style="transform-origin: 0% 0%; transform: rotate('+n+'deg); background-color:'+color+'; color: '+contrast+';">',
                 '  <input class="tip-input hidden-el" type="text" style="color: '+contrast+'" />',
                 '  <div class="tip-layer">'+label+'</div>',
                 '  <svg class="close" viewbox="0 0 45 35">',
