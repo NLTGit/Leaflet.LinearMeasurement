@@ -81,7 +81,7 @@
 
             var html = [
                 '<div class="total-popup-content" style="transform-origin: 0% 0%; transform: rotate('+n+'deg); position: absolute; background-color:'+color+'; color: '+contrast+';">',
-                '  <input class="tip-input hidden-el" type="text" style="color: '+contrast+'" />',
+                '  <input class="tip-input hidden-el" type="text" style="color: '+contrast+'" onClick="this.select()" />',
                 '  <div class="tip-layer">'+label+'</div>',
                 '  <svg class="close" viewbox="0 0 45 35">',
                 '   <path class="close" style="stroke:'+contrast+'" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
@@ -200,6 +200,7 @@
                     } else if(L.DomUtil.hasClass(children[n], 'tip-input')){
                         input = children[n];
                         input.value = title;
+                        input.select();
                         L.DomUtil.removeClass(input, 'hidden-el');
                         input.addEventListener('keyup', fn2);
                         input.addEventListener('blur', fn1);
