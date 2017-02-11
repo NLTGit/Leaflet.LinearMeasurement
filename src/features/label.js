@@ -53,6 +53,7 @@
                 icon: layer.totalIcon,
                 clickable: true,
                 total: true,
+                _riseOnHover: true,
                 type: 'label',
                 sid: 'tooltip'
             }).addTo(layer);
@@ -66,20 +67,20 @@
 
             var contrast = color === '#fff' ? 'black' : '#fff';
 
-            var n = 0;
+            var n = -20;
 
             if(workspace){
               mainLayer.eachLayer(function(workspace){
                 workspace.eachLayer(function(layer){
                     if(layer.options.sid === 'tooltip'){
-                      n+=15;
+                      n+=20;
                     }
                 });
               });
             }
 
             var html = [
-                '<div class="total-popup-content" style="transform-origin: 0% 0%; transform: rotate('+n+'deg); background-color:'+color+'; color: '+contrast+';">',
+                '<div class="total-popup-content" style="transform-origin: 0% 0%; transform: rotate('+n+'deg); position: absolute; background-color:'+color+'; color: '+contrast+';">',
                 '  <input class="tip-input hidden-el" type="text" style="color: '+contrast+'" />',
                 '  <div class="tip-layer">'+label+'</div>',
                 '  <svg class="close" viewbox="0 0 45 35">',
