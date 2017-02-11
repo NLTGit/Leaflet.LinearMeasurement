@@ -45,7 +45,7 @@
               }
             });
 
-            var html = this.getIconHtml(label, color, layer);
+            var html = this.getIconHtml(label, color, layer, latlng);
 
             layer.totalIcon = L.divIcon({ className: 'total-popup', html: html });
 
@@ -53,7 +53,7 @@
                 icon: layer.totalIcon,
                 clickable: true,
                 total: true,
-                _riseOnHover: true,
+                riseOnHover: true,
                 type: 'label',
                 sid: 'tooltip'
             }).addTo(layer);
@@ -61,7 +61,7 @@
             this.drawTooltipHandlers({ latlng : latlng }, layer, label);
         },
 
-        getIconHtml: function(label, color, workspace){
+        getIconHtml: function(label, color, workspace, latlng){
             /* TODO: find a better solution for contrast based on background color */
             var mainLayer = this.core.mainLayer;
 
@@ -72,7 +72,7 @@
             if(workspace){
               mainLayer.eachLayer(function(workspace){
                 workspace.eachLayer(function(layer){
-                    if(layer.options.sid === 'tooltip'){
+                    if(layer.options.sid === 'tooltip' && layer.getLatLng().equals(latlng)){
                       n+=20;
                     }
                 });
