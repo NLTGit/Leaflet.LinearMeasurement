@@ -319,16 +319,12 @@
                 me.mainLayer.removeLayer(selected);
 
                 geo.properties.hidden = data.hidden;
-
                 geo.properties.name = data.name;
-
                 geo.properties.description = data.description;
 
                 me.updateGeoJson(geo);
 
-                if(!data.hidden){
-                    me.plotGeoJsons(id);
-                }
+                me._map.fire('linear_feature_on');
             });
 
         }
