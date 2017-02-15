@@ -1,11 +1,13 @@
 var Geo = {
 
     repaintGeoJson: function(layer){
+
       if(layer && layer.options.id){
           var id = layer.options.id;
           this.persistGeoJson(layer);
           this._map.fire('linear_feature_on');
       }
+
     },
 
     getGeoJsons: function(){
@@ -109,7 +111,8 @@ var Geo = {
 
     persistGeoJson: function(layer){
         var me = this,
-            geo, g,
+            geo,
+            g,
             features = [],
             operation = layer.options.id ? 'update' : 'insert',
             did = (new Date()).getTime(),
@@ -119,10 +122,13 @@ var Geo = {
 
         layer.eachLayer(function(l){
             g = l.toGeoJSON();
+
             g.properties.styles = l.options;
+
             if(!g.id){
               g.id = (new Date()).getTime() + Math.floor(1000 + Math.random() * 9000);
             }
+
             features.push(g);
         });
 
@@ -161,8 +167,11 @@ var Geo = {
         var pointToLayerFn = function (feature, latlng) {
             var l;
 
-            if(feature.properties.styles.label){
-              l = me.nodeFeature.renderLabel(latlng, feature.properties.styles.label, feature.properties.styles, false);
+            if(feature.properties.styles.sid == 'tooltip'){
+              l = null;
+
+            } else if(feature.properties.styles.label){
+              l = me.nodeFeature.renderLabel(latlng, feature.properties.styles.label, feature.properties.styles, feature);
 
             } else {
               l = me.nodeFeature.renderCircle(latlng, false, false, false, true, feature.properties.styles);
@@ -180,6 +189,8 @@ var Geo = {
                 multi = layer;
             }
         };
+
+        var name, lastPoint;
 
         for(var g in geos){
             if(!geos[g]){
@@ -210,14 +221,15 @@ var Geo = {
             gLayer.eachLayer(searchLayerFn);
 
             if(props.lastPoint){
-                this.labelFeature.drawTooltip(props.lastPoint, gLayer, props.name);
+                name = props.name;
+                lastPoint = props.lastPoint;
             }
 
             if(repaint){
               this.selectedLayer = gLayer;
             }
+
+            this.labelFeature.drawTooltip(gLayer.options.lastPoint, gLayer, gLayer.options.title);
         }
-
-
     }
 };

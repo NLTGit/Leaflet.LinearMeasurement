@@ -51,6 +51,8 @@
         },
 
         renderPolyline: function(latLngs, layer) {
+            console.log('renderPolyLine');
+
             var options = this.core.options;
 
             var poly = L.polyline(latLngs, {
@@ -71,6 +73,8 @@
         },
 
         renderPolygon: function(latLngs, layer) {
+            console.log('renderPolygon');
+
             var options = this.core.options;
 
             var poly = L.polygon(latLngs, {

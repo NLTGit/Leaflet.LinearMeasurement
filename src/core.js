@@ -8,7 +8,7 @@
             position: 'topleft',
             color: '#4D90FE',
             fillColor: '#fff',
-            features: ['node', 'line', 'poly', 'ruler', 'nap', 'label', 'style', 'drag', 'trash'],
+            features: ['node', 'line', 'poly', 'ruler', 'label', 'style', 'drag', 'trash'], //'nap'
             pallette: ['#FF0080', '#4D90FE', 'red', 'blue', 'green', 'orange', 'black'],
             dashArrayOptions: ['5, 5', '5, 10', '10, 5', '5, 1', '1, 5', '0.9', '15, 10, 5', '15, 10, 5, 10', '15, 10, 5, 10, 15', '5, 5, 1, 5'],
             fill: true,
