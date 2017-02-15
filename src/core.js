@@ -47,6 +47,18 @@
 
             /* listening to a global map event in order to allow external activation */
 
+            map.on('linear_feature_on_optional', function(data){
+                if(me.active){
+                    me.resetRuler();
+
+                    me.mainLayer.eachLayer(function(l){
+                      me.mainLayer.removeLayer(l);
+                    });
+
+                    me.plotGeoJsons();
+                }
+            });
+
             map.on('linear_feature_on', function(data){
                 if(!me.active){
                     me.active = true;
