@@ -23,11 +23,13 @@
                   me.resetRuler(!!me.mainLayer);
                   L.DomUtil.removeClass(link, 'icon-active');
                   L.DomUtil.removeClass(map_container, 'ruler-map');
+                  me._map.fire("measure:stop");
 
               } else {
                   me.initRuler();
                   L.DomUtil.addClass(link, 'icon-active');
                   L.DomUtil.addClass(map_container, 'ruler-map');
+                  me._map.fire("measure:start");
               }
           });
 
@@ -555,5 +557,4 @@
 
       layerSelected: function(e){}
   });
-
 })();
