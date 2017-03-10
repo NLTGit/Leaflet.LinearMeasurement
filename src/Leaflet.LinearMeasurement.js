@@ -4,7 +4,7 @@
 
       options: {
           position: 'topleft',
-          unitSystem: 'metric', // imperial | metric
+          unitSystem: 'imperial', // imperial | metric
           color: '#4D90FE',
           contrastingColor: '#fff'
       },
@@ -505,7 +505,9 @@
               total_label = this.total,
               html = [
                   '<div class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label,
-                  ' <i class="fa fa-close close"></i>',
+                  '  <svg class="close" viewbox="0 0 45 35">',
+                  '   <path style="stroke: '+this.options.contrastingColor+'" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
+                  '  </svg>',
                   '</div>'
               ].join('');
 
