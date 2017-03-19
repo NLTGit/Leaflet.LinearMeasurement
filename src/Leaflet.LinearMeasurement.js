@@ -7,7 +7,7 @@
           unitSystem: 'imperial', // imperial | metric
           color: '#4D90FE',
           contrastingColor: '#fff',
-          show_last_node: true
+          show_last_node: false
       },
 
       onAdd: function (map) {
