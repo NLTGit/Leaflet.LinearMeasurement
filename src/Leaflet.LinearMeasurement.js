@@ -6,7 +6,8 @@
           position: 'topleft',
           unitSystem: 'imperial', // imperial | metric
           color: '#4D90FE',
-          contrastingColor: '#fff'
+          contrastingColor: '#fff',
+          show_last_node: true
       },
 
       onAdd: function (map) {
@@ -489,8 +490,10 @@
               return;
           }
 
-          this.cleanUpLastNodes();
-          
+          if(!this.options.show_last_node){
+            this.cleanUpLastNodes();
+          }
+
           this.layer.off('click');
           this.layer.off('dblclick');
 
