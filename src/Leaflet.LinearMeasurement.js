@@ -10,6 +10,8 @@
           show_last_node: false
       },
 
+      clickSpeed: 200,
+
       onAdd: function (map) {
           var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
               link = L.DomUtil.create('a', 'icon-ruler', container),
@@ -70,7 +72,8 @@
       },
 
       initRuler: function(){
-          var map = this._map;
+          var me = this,
+              map = this._map;
 
           this.mainLayer = L.featureGroup();
           this.mainLayer.addTo(this._map);
@@ -88,9 +91,37 @@
               L.DomEvent.stop(e);
           };
 
-          map.on('click', this.getMouseClickHandler, this);
-          map.on('mousemove', this.getMouseMoveHandler, this);
-          map.on('dblclick', this.dblClickEventFn, map);
+          this.clickEventFn = function(e){
+            if(me.clickHandle){
+              clearTimeout(me.clickHandle);
+              me.clickHandle = 0;
+
+              if(me.options.show_last_node){
+                me.preClick(e);
+                me.getMouseClickHandler(e);
+              }
+
+              me.getDblClickHandler(e);
+
+            } else {
+              me.preClick(e);
+
+              me.clickHandle = setTimeout(function(){
+                me.getMouseClickHandler(e);
+                me.clickHandle = 0;
+
+              }, me.clickSpeed);
+            }
+          };
+
+          this.moveEventFn = function(e){
+            if(!me.clickHandle){
+              me.getMouseMoveHandler(e);
+            }
+          };
+
+          map.on('click', this.clickEventFn, this);
+          map.on('mousemove', this.moveEventFn, this);
 
           this.resetRuler();
       },
@@ -99,8 +130,7 @@
           this.layer = L.featureGroup();
           this.layer.addTo(this.mainLayer);
           this.layer.on('selected', this.layerSelected);
-          this.layer.on('click', this.getMouseClickHandler, this);
-          this.layer.on('dblclick', this.getDblClickHandler, this);
+          this.layer.on('click', this.clickEventFn, this);
       },
 
       resetRuler: function(resetLayer){
@@ -109,7 +139,6 @@
           if(resetLayer){
               map.off('click', this.clickEventFn, this);
               map.off('mousemove', this.moveEventFn, this);
-              map.off('dblclick', this.dblClickEventFn, map);
 
               if(this.mainLayer){
                   this._map.removeLayer(this.mainLayer);
@@ -370,23 +399,27 @@
           return false;
       },
 
+      preClick: function(e){
+        var me = this,
+            target = e.originalEvent.target;
+
+        if(this.hasClass(target, ['leaflet-popup', 'total-popup-content'])){
+            return;
+        }
+
+        if(!me.layer){
+            me.initLayer();
+        }
+
+        me.cleanUpMarkers(true);
+
+        me.fixedLast = me.last;
+        me.prevLatlng = e.latlng;
+        me.sum = 0;
+      },
+
       getMouseClickHandler: function(e){
-          var me = this,
-              target = e.originalEvent.target;
-
-          if(this.hasClass(target, ['leaflet-popup', 'total-popup-content'])){
-              return;
-          }
-
-          if(!me.layer){
-              me.initLayer();
-          }
-
-          me.cleanUpMarkers(true);
-
-          me.fixedLast = me.last;
-          me.prevLatlng = e.latlng;
-          me.sum = 0;
+          var me = this;
 
           if(me.poly){
               me.latlngsList.push(me.latlngs);
@@ -490,12 +523,7 @@
               return;
           }
 
-          if(!this.options.show_last_node){
-            this.cleanUpLastNodes();
-          }
-
           this.layer.off('click');
-          this.layer.off('dblclick');
 
           L.DomEvent.stop(e);
 
@@ -534,18 +562,6 @@
           workspace.fireEvent('selected', data);
 
           this.resetRuler(false);
-      },
-
-      cleanUpLastNodes: function(){
-          var dots = [];
-
-          this.layer.eachLayer(function(l, i){
-              if(l.options.type === 'dot'){
-                  dots.push(l);
-              }
-          });
-
-          this.purgeLayers(dots.splice(-4));
       },
 
       purgeLayers: function(layers){
