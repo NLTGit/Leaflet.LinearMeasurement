@@ -7,7 +7,8 @@
           unitSystem: 'imperial', // imperial | metric
           color: '#4D90FE',
           contrastingColor: '#fff',
-          show_last_node: false
+          show_last_node: false,
+          show_azimut: true
       },
 
       onAdd: function (map) {
@@ -276,7 +277,9 @@
 
       renderCircle: function(latLng, radius, layer, type, label) {
           var color = this.options.color,
-              lineColor = this.options.color;
+              lineColor = this.options.color,
+              azimut = '',
+              nodeCls = '';
 
           type = type || 'circle';
 
@@ -290,14 +293,23 @@
               type: type
           };
 
-          var p = this._map.latLngToContainerPoint(latLng);
+          var a = this.prevLatlng ? this._map.latLngToContainerPoint(this.prevLatlng) : null,
+              b = this._map.latLngToContainerPoint(latLng);
 
-          p_latLng = this._map.containerPointToLatLng(p);
+          if(type === 'dot'){
+            nodeCls = 'node-label';
+
+            if(a && this.options.show_azimut){
+              azimut = ' <span class="azimut"> '+this.getAzimut(a, b)+'&deg;</span>';
+            }
+          }
+
+          p_latLng = this._map.containerPointToLatLng(b);
 
           if(label){
               var cicon = L.divIcon({
-                  className: 'total-popup-label',
-                  html: '<span style="color: '+color+';">'+label+'</span>'
+                  className: 'total-popup-label ' + nodeCls,
+                  html: '<span style="color: '+color+';">'+label+azimut+'</span>'
               });
 
               options.icon = cicon;
@@ -311,6 +323,29 @@
           circle.addTo(layer);
 
           return circle;
+      },
+
+      getAzimut: function(a, b){
+        var deg = 0;
+
+        if(a && b){
+          deg = parseInt(Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI);
+
+          if(deg > 0){
+            deg += 90;
+          } else if(deg < 0){
+            deg = Math.abs(deg);
+            if(deg <= 90){
+              deg = 90 - deg;
+            } else {
+              deg = 360 - (deg - 90);
+            }
+          }
+        }
+
+        this.lastAzimut = deg;
+
+        return deg;
       },
 
       renderPolyline: function(latLngs, dashArray, layer) {
@@ -385,7 +420,6 @@
           me.cleanUpMarkers(true);
 
           me.fixedLast = me.last;
-          me.prevLatlng = e.latlng;
           me.sum = 0;
 
           if(me.poly){
@@ -413,10 +447,13 @@
           var s = dis.toFixed(2);
 
           me.renderCircle(e.latlng, 0, me.layer, 'dot', parseInt(s) ? (s + ' ' + me.measure.unit) : '' );
+          me.prevLatlng = e.latlng;
       },
 
       getMouseMoveHandler: function(e){
           if(this.prevLatlng){
+              var latLng = e.latlng;
+
               this.latlngs = [this.prevLatlng, e.latlng];
 
               if(!this.poly){
@@ -431,9 +468,17 @@
               /* scalar and unit */
               this.measure = this.formatDistance(this.distance + this.sum, 2);
 
+              var a = this.prevLatlng ? this._map.latLngToContainerPoint(this.prevLatlng) : null,
+                  b = this._map.latLngToContainerPoint(latLng);
+
+              if(a && this.options.show_azimut){
+                var style = 'color: '+this.options.contrastingColor+';';
+                azimut = ' <span class="azimut azimut-final" style="'+style+'"> &nbsp; '+this.getAzimut(a, b)+'&deg;</span>';
+              }
+
               /* tooltip with total distance */
               var label = this.measure.scalar + ' ' + this.measure.unit,
-                  html = '<span class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label + '</span>';
+                  html = '<span class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label + azimut + '</span>';
 
               if(!this.total){
                   this.totalIcon = L.divIcon({ className: 'total-popup', html: html });
@@ -484,7 +529,8 @@
       },
 
       getDblClickHandler: function(e){
-          var me = this;
+          var azimut = '',
+              me = this;
 
           if(!this.total){
               return;
@@ -499,13 +545,18 @@
 
           L.DomEvent.stop(e);
 
+          if(this.options.show_azimut){
+            var style = 'color: '+this.options.contrastingColor+';';
+            azimut = ' <span class="azimut azimut-final" style="'+style+'"> &nbsp; '+this.lastAzimut+'&deg;</span>';
+          }
+
           var workspace = this.layer,
               label = this.measure.scalar + ' ' + this.measure.unit + ' ',
               total_scalar = this.measure.unit === this.SUB_UNIT ? this.measure.scalar/this.UNIT_CONV : this.measure.scalar,
               total_latlng = this.total.getLatLng(),
               total_label = this.total,
               html = [
-                  '<div class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label,
+                  '<div class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label + azimut,
                   '  <svg class="close" viewbox="0 0 45 35">',
                   '   <path style="stroke: '+this.options.contrastingColor+'" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
                   '  </svg>',
@@ -545,7 +596,7 @@
               }
           });
 
-          this.purgeLayers(dots.splice(-4));
+          this.purgeLayers(dots.splice(-2));
       },
 
       purgeLayers: function(layers){
