@@ -8,7 +8,7 @@
           color: '#4D90FE',
           contrastingColor: '#fff',
           show_last_node: false,
-          show_azimut: true
+          show_azimut: false
       },
 
       clickSpeed: 200,
@@ -329,7 +329,7 @@
             nodeCls = 'node-label';
 
             if(a && this.options.show_azimut){
-              azimut = ' <span class="azimut"> '+this.getAzimut(a, b)+'&deg;</span>';
+              azimut = ' <span class="azimut"> '+this.lastAzimut+'&deg;</span>';
             }
           }
 
