@@ -72,3 +72,19 @@
     font-size: 10px;
     white-space: nowrap;
 }
+
+.node-label {
+    top: -25px !important;
+}
+
+.azimut {
+  color: blue;
+  text-shadow: 1px 1px 0px white;
+  font-size: 13px;
+  font-weight: normal;
+}
+
+.azimut-final {
+  text-shadow: none;
+  font-weight: bold;
+}
