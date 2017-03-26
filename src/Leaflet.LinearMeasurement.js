@@ -487,6 +487,8 @@
       },
 
       getMouseMoveHandler: function(e){
+          var azimut = '';
+
           if(this.prevLatlng){
               var latLng = e.latlng;
 
