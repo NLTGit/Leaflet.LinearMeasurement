@@ -26,12 +26,14 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
 
 <div>
   <p>LinearCore is a control class that holds several plugins to interact with the map. You need to just add an instance to the map with a config object:</p>
+  
+  <p>Include the script and css</p>
 
   <pre>
-    map.addControl(new L.Control.LinearCore({
-      unitSystem: 'imperial',
-      color: '#FF0080',
-      type: 'line'
+    map.addControl(new L.Control.LinearMeasurement({
+        unitSystem: 'imperial',
+        color: '#FF0080',
+        type: 'line'
     }));
   </pre>
 
