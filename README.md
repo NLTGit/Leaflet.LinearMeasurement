@@ -119,4 +119,6 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
 Leaflet 1.0.0+ (may work with earlier versions)
 
 <h2>Author</h2>
-Juan Daniel Flores
+New Light Technologies, Inc. (NLT)
+Contact us for more informaiton: https://newlighttechnologies.com/about/contact/
+
