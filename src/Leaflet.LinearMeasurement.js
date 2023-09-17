@@ -312,7 +312,7 @@
 
           type = type || 'circle';
 
-          linesHTML = [];
+          var linesHTML = [];
 
           var options = {
               color: lineColor,
@@ -333,7 +333,7 @@
             }
           }
 
-          p_latLng = this._map.containerPointToLatLng(b);
+          var p_latLng = this._map.containerPointToLatLng(b);
 
           if(label){
               var cicon = L.divIcon({
