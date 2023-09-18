@@ -92,6 +92,18 @@
               L.DomEvent.stop(e);
           };
 
+          this.keyDownFn = function(e) {
+            // presing esc cancels measurement
+            if (e.originalEvent.key.toLowerCase() == 'escape') {
+                console.log('esc pressed!')
+                this.layer.off('click');
+                this.layer.off('keydown');          
+                this.mainLayer.removeLayer(this.layer);
+                L.DomEvent.stop(e);
+                this.resetRuler(false);
+            }            
+          }
+
           this.clickEventFn = function(e){
             if(me.clickHandle){
               clearTimeout(me.clickHandle);
@@ -114,16 +126,15 @@
               }, me.clickSpeed);
             }
           };
-
+        
           this.moveEventFn = function(e){
             if(!me.clickHandle){
               me.getMouseMoveHandler(e);
             }
           };
-
           map.on('click', this.clickEventFn, this);
           map.on('mousemove', this.moveEventFn, this);
-
+          map.on('keydown', this.keyDownFn, this);
           this.resetRuler();
       },
 
@@ -575,7 +586,7 @@
           }
 
           this.layer.off('click');
-
+          this.layer.off('keydown');          
           L.DomEvent.stop(e);
 
           if(this.options.show_azimut){
