@@ -95,12 +95,14 @@
           this.keyDownFn = function(e) {
             // presing esc cancels measurement
             if (e.originalEvent.key.toLowerCase() == 'escape') {
-                console.log('esc pressed!')
-                this.layer.off('click');
-                this.layer.off('keydown');          
-                this.mainLayer.removeLayer(this.layer);
-                L.DomEvent.stop(e);
-                this.resetRuler(false);
+                if (this.layer) {
+                    //console.log('esc pressed!')                
+                    this.layer.off('click');
+                    this.layer.off('keydown');          
+                    this.mainLayer.removeLayer(this.layer);
+                    L.DomEvent.stop(e);
+                    this.resetRuler(false);
+                }
             }            
           }
 
