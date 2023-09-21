@@ -93,8 +93,8 @@
           };
 
           this.keyDownFn = function(e) {
-            // presing esc cancels measurement
-            if (e.originalEvent.key.toLowerCase() == 'escape') {
+            // ctrl-x cancel measurement
+            if ((e.originalEvent.ctrlKey || e.originalEvent.metaKey) && e.originalEvent.key.toLowerCase() === 'x') {
                 if (this.layer) {
                     //console.log('esc pressed!')                
                     this.layer.off('click');
@@ -107,6 +107,7 @@
           }
 
           this.clickEventFn = function(e){
+            console.log(e)
             if(me.clickHandle){
               clearTimeout(me.clickHandle);
               me.clickHandle = 0;
