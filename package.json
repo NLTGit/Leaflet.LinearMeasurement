@@ -8,5 +8,7 @@
   },
   "devDependencies": {
     "gulp-sass": "^2.3.2"
-  }
+  },
+  "main": "src/Leaflet.LinearMeasurement.js",
+  "style": "sass/leaflet.scss"
 }
