@@ -92,7 +92,22 @@
               L.DomEvent.stop(e);
           };
 
+          this.keyDownFn = function(e) {
+            // ctrl-x cancel measurement
+            if ((e.originalEvent.ctrlKey || e.originalEvent.metaKey) && e.originalEvent.key.toLowerCase() === 'x') {
+                if (this.layer) {
+                    //console.log('esc pressed!')                
+                    this.layer.off('click');
+                    this.layer.off('keydown');          
+                    this.mainLayer.removeLayer(this.layer);
+                    L.DomEvent.stop(e);
+                    this.resetRuler(false);
+                }
+            }            
+          }
+
           this.clickEventFn = function(e){
+            console.log(e)
             if(me.clickHandle){
               clearTimeout(me.clickHandle);
               me.clickHandle = 0;
@@ -114,16 +129,15 @@
               }, me.clickSpeed);
             }
           };
-
+        
           this.moveEventFn = function(e){
             if(!me.clickHandle){
               me.getMouseMoveHandler(e);
             }
           };
-
           map.on('click', this.clickEventFn, this);
           map.on('mousemove', this.moveEventFn, this);
-
+          map.on('keydown', this.keyDownFn, this);
           this.resetRuler();
       },
 
@@ -312,7 +326,7 @@
 
           type = type || 'circle';
 
-          linesHTML = [];
+          var linesHTML = [];
 
           var options = {
               color: lineColor,
@@ -333,7 +347,7 @@
             }
           }
 
-          p_latLng = this._map.containerPointToLatLng(b);
+          var p_latLng = this._map.containerPointToLatLng(b);
 
           if(label){
               var cicon = L.divIcon({
@@ -575,7 +589,7 @@
           }
 
           this.layer.off('click');
-
+          this.layer.off('keydown');          
           L.DomEvent.stop(e);
 
           if(this.options.show_azimut){
