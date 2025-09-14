@@ -1,5 +1,12 @@
 <h2>Leaflet Linear Measurement Plugin</h2>
 
+<p>
+  <a href="https://github.com/NLTGit/Leaflet.LinearMeasurement/actions"><img alt="CI" src="https://github.com/NLTGit/Leaflet.LinearMeasurement/workflows/ci/badge.svg"></a>
+  <a href="https://www.npmjs.com/package/leaflet-linear-measurement"><img alt="npm" src="https://img.shields.io/npm/v/leaflet-linear-measurement"></a>
+  <img alt="Leaflet" src="https://img.shields.io/badge/Leaflet-1.x%20|%202.x-green">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg">
+</p>
+
 <ul>
 
   <li>This plugin is a measuring tool that shows interval marks along the polyline path.</li>
@@ -21,6 +28,8 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
 <div style="padding: 20px 20px;">
   <img src="examples/dc.png" />
 </div>
+
+Try it online (ESM): <a href="https://codesandbox.io/s/github/NLTGit/Leaflet.LinearMeasurement/tree/feature/leaflet-2-esm/examples/esm-vite">CodeSandbox</a>
 
 <h2>Usage</h2>
 
@@ -91,6 +100,26 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
       color: '#FF0080',
       type: 'line'
     }));</code>
+
+<h3>ESM (Leaflet 2.x)</h3>
+
+```js
+import 'leaflet/dist/leaflet.css';
+import * as L from 'leaflet';
+import 'leaflet-linear-measurement';
+
+const map = L.map('map').setView([38.9072, -77.0369], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+map.addControl(new L.Control.LinearMeasurement({ unitSystem: 'imperial' }));
+```
+
+<h3>UMD (Leaflet 1.x)</h3>
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-linear-measurement/dist/leaflet-linear-measurement.umd.js"></script>
+```
 
 <h2>Options</h2>
 
