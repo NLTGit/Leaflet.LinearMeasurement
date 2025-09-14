@@ -92,6 +92,7 @@
           }
 
           this.dblClickEventFn = function(e){ L.DomEvent.stop(e); };
+          map.on('dblclick', this.finish, this);
 
           this.keyDownFn = function(e) {
             // ctrl-x cancel measurement
@@ -108,21 +109,8 @@
           }
 
           this.clickEventFn = function(e){
-            if(me.clickHandle){
-              clearTimeout(me.clickHandle);
-              me.clickHandle = 0;
-              if(me.options.show_last_node){
-                me.preClick(e);
-                me.getMouseClickHandler(e);
-              }
-              me.getDblClickHandler(e);
-            } else {
-              me.preClick(e);
-              me.clickHandle = setTimeout(function(){
-                me.getMouseClickHandler(e);
-                me.clickHandle = 0;
-              }, me.clickSpeed);
-            }
+            me.preClick(e);
+            me.getMouseClickHandler(e);
           };
         
           this.moveEventFn = function(e){
@@ -149,7 +137,7 @@
           if(resetLayer){
               map.off('click', this.clickEventFn, this);
               map.off('mousemove', this.moveEventFn, this);
-              // dblclick handled via synthetic handler
+              map.off('dblclick', this.finish, this);
 
               if(this.mainLayer){
                   this._map.removeLayer(this.mainLayer);
@@ -172,8 +160,6 @@
           this.multi = null;
           this.latlngs = null;
           this.latlngsList = [];
-          this.vertices = [];
-          this.segmentIndex = 0;
           this.sum = 0;
           this.distance = 0;
           this.separation = 1;
@@ -313,7 +299,7 @@
               this.last = t;
           }
 
-          // Add a small label at the segment midpoint with length and costs and number
+          // Add a small label at the segment midpoint with length and costs
           try {
             var midx = (p2.x + p1.x) / 2, midy = (p2.y + p1.y) / 2;
             var midLatLng = this._map.containerPointToLatLng(L.point(midx, midy));
@@ -326,8 +312,7 @@
             }
             var costA = (this.options.costAboveGround || 0) * meters;
             var costU = (this.options.costUnderground || 0) * meters;
-            this.segmentIndex = (this.segmentIndex || 0) + 1;
-            var segHtml = '<span class="seg-label">#'+this.segmentIndex+' · '+(meters.toFixed(2))+' m · $'+(costA.toFixed(2))+' / $'+(costU.toFixed(2))+'</span>';
+            var segHtml = '<span class="seg-label">'+(meters.toFixed(2))+' m · $'+(costA.toFixed(2))+' / $'+(costU.toFixed(2))+'</span>';
             var segIcon = L.divIcon({ className: 'seg-label', html: segHtml });
             L.marker(midLatLng, { icon: segIcon, interactive: false, keyboard: false, pane: this.options.pane }).addTo(this.layer);
           } catch(e) {}
@@ -720,7 +705,7 @@
       });
     }
     var se = L.latLng(minLat, maxLng);
-    var at = this._map.unproject(this._map.project(se).add([15,15]));
+    var at = this._map.unproject(this._map.project(se).add([30,30]));
     var icon = L.divIcon({ className: 'total-popup', html: summary });
     if(this.total){
       this.total.setLatLng(at);
