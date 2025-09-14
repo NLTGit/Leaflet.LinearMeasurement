@@ -144,6 +144,7 @@ var Measurement = L.Control.LinearMeasurement.extend({
       total_above_ground: numberWithCommas(L.Util.formatNum(cost_above_ground * distance, 2)),
       total_underground: numberWithCommas(L.Util.formatNum(cost_underground * distance, 2))
     };
+    // Show popup here (this event only fires on finish/dblclick)
     var content = L.Util.template(html, data), popup = L.popup().setContent(content);
     if (e.total_label && e.total_label.bindPopup) {
       e.total_label.bindPopup(popup, { offset: [45, 0] });

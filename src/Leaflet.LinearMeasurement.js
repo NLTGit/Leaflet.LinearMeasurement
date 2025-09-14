@@ -12,7 +12,7 @@
           pane: undefined
       },
 
-      clickSpeed: 200,
+      clickSpeed: 120,
 
       onAdd: function (map) {
           var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
