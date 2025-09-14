@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+  <!-- Leaflet Draw Plugin -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+  <!-- Leaflet Control Geocoder CSS and JS (v1.13.0) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@1.13.0/dist/Control.Geocoder.css" />
+  <script src="https://unpkg.com/leaflet-control-geocoder@1.13.0/dist/Control.Geocoder.js"></script>
+
+  <!-- Turf.js for geospatial operations -->
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+  <!-- Esri Leaflet for ArcGIS MapServer layers -->
+  <script src="https://unpkg.com/esri-leaflet@3.0.11/dist/esri-leaflet.js"></script>
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+    #map {
+      flex: 1;
+      width: 100%;
+    }
+    /* The info window – nearly the same as your original style */
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 55px;
+      background: white;
+      padding: 10px;
+      z-index: 1000;
+      max-height: 90vh;
+      max-width: 70vh;
+      overflow-y: auto;
+      font-family: sans-serif;
+      font-size: 18px;
+    }
+    /* The close button: positioned at top right, minimal margins */
+    #close-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: none; /* hidden by default */
+    }
+    .leaflet-top.leaflet-left .leaflet-draw {
+      z-index: 1001;
+    }
+  </style>
+</head>
+<body>
+  <!-- The info window. Its content will update, and the X appears only when results are shown. -->
+  <div id="info">
+    <div id="info-content">
+      Click on the map, search an address, or draw a polygon to query features
+    </div>
+    <button id="close-btn" aria-label="Close query window">X</button>
+  </div>
+  <div id="map"></div>
+
+  <script>
+    // The default message for the query window.
+    var defaultMessage = "Click on the map, search an address, or draw a polygon to query features";
+
+    // This function checks whether the info content includes "Results:" (i.e. query results)
+    // If yes, the close (X) button is shown; otherwise, it is hidden.
+    function updateCloseButtonVisibility() {
+      var content = document.getElementById("info-content").innerHTML;
+      if (content.indexOf("Results:") !== -1) {
+        document.getElementById("close-btn").style.display = "block";
+      } else {
+        document.getElementById("close-btn").style.display = "none";
+      }
+    }
+
+    // Demo notice footer appended to popups and printouts
+    var demoNoticeHtml = '<div style="margin-top:8px;font-size:12px;color:#b00;font-weight:bold;">For DEMO purposes ONLY</div>';
+
+    // Initialize the map
+    var map = L.map("map", {
+      zoomSnap: 0,
+      zoomDelta: 0.25
+    }).setView([38.92874689113557, -77.65311911719417], 8.75);
+
+    // Define basemaps
+    var darkBasemap = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+      subdomains: "abcd"
+    });
+    var aerialBasemap = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      attribution: 'Imagery &copy; <a href="https://www.esri.com/">Esri</a>',
+      maxZoom: 19
+    });
+    var lightBasemap = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    });
+    /*var googleBasemap = L.tileLayer("http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+      maxZoom: 20,
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+      attribution: 'Map data ©2021 Google'
+    });*/
+    lightBasemap.addTo(map);
+
+    // DC MapServer basemaps
+    var dcBasemapWM = L.esri.tiledMapLayer({
+      url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/DC_Basemap_WebMercator/MapServer",
+      attribution: "&copy; DC GIS",
+      maxZoom: 19
+    });
+    var dcAerialWM = L.esri.tiledMapLayer({
+      url: "https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/DC_Aerial_Photo_WebMercator/MapServer",
+      attribution: "&copy; DC GIS",
+      maxZoom: 19
+    });
+
+    // -------------------------------
+    // Additional Resources Helpers
+    // -------------------------------
+    function createAdditionalResourceLinksArray(props) {
+      if (!props["ADDITIONAL_RESOURCES"]) return [];
+      var resources = props["ADDITIONAL_RESOURCES"].split(";")
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0);
+      var providedLinks = [];
+      if (props["DATAPAGE_LINK_ADDITIONAL"]) {
+        providedLinks = props["DATAPAGE_LINK_ADDITIONAL"].split(";").map(s => s.trim());
+      }
+      // Mapping dictionary for known resources
+      var mapping = {
+        "imf": "https://data.imf.org/?sk=388dfa60-1d26-4ade-b505-a05a558d9a42",
+        "world bank": "https://data.worldbank.org/",
+        "worldbank": "https://data.worldbank.org/",
+        "baltimore metropolitan council regional gis data center": "https://gisdata.baltometro.org/",
+        "wmata": "https://www.wmata.com/initiatives/open-data-hub/",
+        "metropolitan washington council of governments": "https://www.mwcog.org/transportation/data-and-tools/maps-and-gis/"
+      };
+      var linksArray = [];
+      for (var i = 0; i < resources.length; i++) {
+        var res = resources[i];
+        var resLower = res.toLowerCase();
+        var link = "";
+        var found = false;
+        // Check if the resource name contains any key from the mapping
+        for (var key in mapping) {
+          if (resLower.indexOf(key) !== -1) {
+            link = mapping[key];
+            found = true;
+            break;
+          }
+        }
+        // If not found in the mapping, fall back to the provided links (by index)
+        if (!found) {
+          if (i < providedLinks.length && providedLinks[i].length > 0) {
+            link = providedLinks[i];
+          } else {
+            link = "#";
+          }
+        }
+        linksArray.push(`<a href="${link}" target="_blank">${res}</a>`);
+      }
+      return linksArray;
+    }
+
+    function createAdditionalResourceLinks(props) {
+      return createAdditionalResourceLinksArray(props).join(", ");
+    }
+
+    function createResourceLinks(props, resourceKey, linkKey) {
+      if (!props[resourceKey] || !props[linkKey]) return "";
+      return props[resourceKey].split(";").map((name, i) => {
+        const link = props[linkKey].split(";")[i] || "#";
+        return `<a href="${link}" target="_blank">${name}</a>`;
+      }).join(", ");
+    }
+
+    // Build popup content for a feature
+    function buildPopupContent(props, titleField, defaultTitle) {
+      const title = props[titleField] || defaultTitle;
+      // The feature's name as a hyperlink
+      let content = `<a href="${props.DATAPAGE_LINK || "#"}" target="_blank">${title}</a>`;
+      
+      const stateResources = createResourceLinks(props, "STATE_RESOURCES", "STATE_RESOURCES_LINK");
+      if (stateResources) content += `<br><br>State Resources:<br>${stateResources}`;
+	  
+      const federalResources = createResourceLinks(props, "FEDERAL_RESOURCES", "FEDERAL_RESOURCES_LINK");
+      if (federalResources) content += `<br><br>Federal Resources:<br>${federalResources}`;
+	  
+      const additional = createAdditionalResourceLinks(props);
+      if (additional) content += `<br><br>Additional Resources:<br>${additional}`;
+      
+      return content;
+    }
+
+    // Generic onEachFeature for GeoJSON layers
+    function onEachFeature(titleField, defaultTitle) {
+      return function(feature, layer) {
+        layer.on("click", function() {
+          const content = buildPopupContent(feature.properties, titleField, defaultTitle);
+          document.getElementById("info-content").innerHTML = `<strong>Results:</strong><br>${content}` + demoNoticeHtml;
+          document.getElementById("info").style.display = "block";
+          updateCloseButtonVisibility();
+        });
+      };
+    }
+
+    // Helper function to create a result line for a feature (used in queries)
+    function createResultLine(props, layerType) {
+      var titleField = layerType === "county" ? "NAMELSAD" : "NAME.x";
+      var defaultTitle = layerType === "county" ? "Unknown County" : "Unknown City";
+      var title = props[titleField] || defaultTitle;
+      return `<a href="${props.DATAPAGE_LINK || "#"}" target="_blank">${title}</a>`;
+    }
+
+    // Generic function to query layers using a given geometry and test function
+    function queryLayersWithGeometry(geometry, testFunc) {
+      var baseResults = [];
+      var stateResources = new Set();
+      var federalResources = new Set();
+      var additionalResources = new Set();
+	    
+      function queryLayer(queryLayer, layerType) {
+        queryLayer.eachLayer(function(featureLayer) {
+          var featureGeoJSON = featureLayer.toGeoJSON();
+          if (testFunc(geometry, featureGeoJSON)) {
+            baseResults.push(createResultLine(featureLayer.feature.properties, layerType));
+            let addLinksArray = createAdditionalResourceLinksArray(featureLayer.feature.properties);
+            addLinksArray.forEach(linkHTML => additionalResources.add(linkHTML));
+            let stateRes = createResourceLinks(featureLayer.feature.properties, "STATE_RESOURCES", "STATE_RESOURCES_LINK");
+            if (stateRes) stateResources.add(stateRes);
+            let fedRes = createResourceLinks(featureLayer.feature.properties, "FEDERAL_RESOURCES", "FEDERAL_RESOURCES_LINK");
+            if (fedRes) federalResources.add(fedRes);
+          }
+        });
+      }
+      queryLayer(countyLayer, "county");
+      queryLayer(cityLayer, "city");
+
+      let infoContent = "<strong>Results:</strong><br>" + baseResults.join("<br>");
+      if (stateResources.size > 0) {
+        infoContent += "<br><br>State Resources:<br>" + Array.from(stateResources).join(", ");
+      }
+      if (federalResources.size > 0) {
+        infoContent += "<br><br>Federal Resources:<br>" + Array.from(federalResources).join(", ");
+      }
+      if (additionalResources.size > 0) {
+        infoContent += "<br><br>Additional Resources:<br>" + Array.from(additionalResources).join(", ");
+      }
+      return infoContent + demoNoticeHtml;
+    }
+
+    // Query function for a point (used in geocoder)
+    function queryAtPoint(latlng) {
+      var point = turf.point([latlng.lng, latlng.lat]);
+      return queryLayersWithGeometry(point, turf.booleanPointInPolygon);
+    }
+
+    // -----------------------------------
+    // Load GeoJSON layers
+    // -----------------------------------
+    var countyLayer = L.geoJSON(null, {
+      style: {
+        color: "#FF9902", 
+        weight: 0.1,
+        fillOpacity: 0.2
+      },
+      onEachFeature: onEachFeature("NAMELSAD", "Unknown County")
+    });
+    fetch("./bin/DMV_GIS_Counties.geojson")
+      .then(response => response.json())
+      .then(data => countyLayer.addData(data));
+
+    var cityLayer = L.geoJSON(null, {
+      style: {
+        color: "#FF9902",
+        weight: 0.1,
+        fillOpacity: 0.2
+      },
+      onEachFeature: onEachFeature("NAME.y", "Unknown City")
+    });
+    fetch("./bin/DMV_GIS_Cities.geojson")
+      .then(response => response.json())
+      .then(data => cityLayer.addData(data));
+
+    var entityLayer = L.geoJSON(null, {
+      style: {
+        color: "#FF9902",
+        weight: 2,
+        fillOpacity: 0
+      },
+      interactive: false
+    });
+    fetch("./bin/DMV_GIS_Entities.geojson")
+      .then(response => response.json())
+      .then(data => entityLayer.addData(data))
+      .catch(err => console.error("Error loading DMV Outline GeoJSON:", err));
+    entityLayer.addTo(map);
+
+    // -----------------------------------
+    // Geocoder for address/place search
+    // -----------------------------------
+    var geocoder = L.Control.geocoder({
+      defaultMarkGeocode: false
+    })
+    .on("markgeocode", function (e) {
+      map.setView(e.geocode.center, 16);
+      var infoContent = queryAtPoint(e.geocode.center);
+      document.getElementById("info-content").innerHTML = infoContent;
+      document.getElementById("info").style.display = "block";
+      updateCloseButtonVisibility();
+    })
+    .addTo(map);
+
+    // -----------------------------------
+    // Draw Control
+    // -----------------------------------
+    var drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+    // Change polyline finish label to "Print" where supported
+    if (L.drawLocal && L.drawLocal.draw && L.drawLocal.draw.handlers && L.drawLocal.draw.handlers.polyline) {
+      L.drawLocal.draw.handlers.polyline.finish = "Print";
+    }
+
+    var drawControl = new L.Control.Draw({
+      edit: { featureGroup: drawnItems },
+      draw: {
+        polygon: true,
+        rectangle: true,
+        circle: false,
+        marker: false,
+        polyline: true,
+        circlemarker: false
+      }
+    });
+    map.addControl(drawControl);
+
+    function buildPrintHtmlForPolylineSequences() {
+      var sections = [];
+      var idx = 1;
+      drawnItems.eachLayer(function(layer) {
+        if (!layer || typeof layer.toGeoJSON !== 'function') return;
+        var gj = layer.toGeoJSON();
+        var gt = gj && gj.geometry && gj.geometry.type;
+        if (gt === 'LineString' || gt === 'MultiLineString') {
+          var resultsHtml = queryLayersWithGeometry(gj, turf.booleanIntersects);
+          sections.push('<div style="page-break-inside:avoid;margin-bottom:16px;"><h3>Polyline #' + (idx++) + '</h3>' + resultsHtml + demoNoticeHtml + '</div>');
+        }
+      });
+      if (sections.length === 0) sections.push('<div>No polylines to print.</div>');
+      var html = '<html><head><meta charset="utf-8"><title>Print Results</title>' +
+        '<style>body{font-family:sans-serif;padding:16px;}h3{margin:8px 0;} .footer{font-size:12px;color:#b00;font-weight:bold;}</style>' +
+        '</head><body>' + sections.join('') + '</body></html>';
+      return html;
+    }
+
+    function printAllPolylineResults() {
+      var w = window.open('', '_blank');
+      if (!w) return;
+      w.document.open();
+      w.document.write(buildPrintHtmlForPolylineSequences());
+      w.document.close();
+      w.focus();
+      w.print();
+    }
+
+    map.on("draw:created", function (e) {
+      var layer = e.layer;
+      drawnItems.addLayer(layer);
+      var drawnGeoJSON = layer.toGeoJSON();
+      var gt = drawnGeoJSON && drawnGeoJSON.geometry && drawnGeoJSON.geometry.type;
+      if (gt === 'LineString' || gt === 'MultiLineString') {
+        printAllPolylineResults();
+      } else {
+        var infoContent = queryLayersWithGeometry(drawnGeoJSON, turf.booleanIntersects);
+        document.getElementById("info-content").innerHTML =
+          (infoContent.indexOf("Results:") !== -1) ? infoContent : "No features found within drawn shape.";
+        document.getElementById("info").style.display = "block";
+        updateCloseButtonVisibility();
+      }
+    });
+
+    map.on("draw:deleted", function () {
+      // Reset the info window back to its default state.
+      document.getElementById("info-content").innerHTML = defaultMessage;
+      document.getElementById("info").style.display = "block";
+      updateCloseButtonVisibility();
+    });
+
+    // -----------------------------------
+    // Layers Control (Basemaps + Overlays)
+    // -----------------------------------
+    var baseLayers = {
+      /*"Google Maps": googleBasemap,*/
+	  "Light Basemap": lightBasemap,
+      "Dark Basemap": darkBasemap,
+      "Aerial Imagery": aerialBasemap,
+      "DC Basemap (Web Mercator)": dcBasemapWM,
+      "DC Aerial Photo (Web Mercator)": dcAerialWM
+    };
+
+    countyLayer.addTo(map);
+    cityLayer.addTo(map);
+
+    var overlays = {
+      "Counties": countyLayer,
+      "Cities": cityLayer,
+      "DMV Outline": entityLayer,
+      "Drawn Items": drawnItems
+    };
+
+    L.control.layers(baseLayers, overlays).addTo(map);
+
+    // Application Status (bottom-left) and About (bottom-right) – swapped positions
+    var releaseInfo = {
+      version: "v0.2.0",
+      date: "2025-09-14",
+      notes: [
+        "Added DC basemap and aerial MapServer layers",
+        "Replaced polyline 'Finish' with 'Print' for sequence printing",
+        "Added DEMO notice to popups and printouts",
+        "Added Application Status and About controls (swapped positions)"
+      ]
+    };
+
+    var statusControl = L.control({ position: 'bottomleft' });
+    statusControl.onAdd = function() {
+      var div = L.DomUtil.create('div');
+      div.style.background = 'white';
+      div.style.padding = '8px';
+      div.style.margin = '8px';
+      div.style.fontFamily = 'sans-serif';
+      div.style.fontSize = '12px';
+      div.style.maxWidth = '260px';
+      div.innerHTML = '<strong>Application Status</strong><br>' +
+        'Version: ' + releaseInfo.version + '<br>' +
+        'Updated: ' + releaseInfo.date + '<br>' +
+        '<details style="margin-top:4px;"><summary>Release Notes</summary><ul style="padding-left:16px; margin:6px 0;">' +
+        releaseInfo.notes.map(function(n){return '<li>'+n+'</li>'}).join('') + '</ul></details>';
+      return div;
+    };
+    statusControl.addTo(map);
+
+    var aboutControl = L.control({ position: 'bottomright' });
+    aboutControl.onAdd = function() {
+      var div = L.DomUtil.create('div');
+      div.style.background = 'white';
+      div.style.padding = '8px';
+      div.style.margin = '8px';
+      div.style.fontFamily = 'sans-serif';
+      div.style.fontSize = '12px';
+      div.style.maxWidth = '260px';
+      div.innerHTML = '<strong>About This Map</strong><br>' +
+        'Explore GIS data sources across the DMV. Draw shapes to view results. Polylines will print results for all polylines in sequence.' +
+        demoNoticeHtml;
+      return div;
+    };
+    aboutControl.addTo(map);
+
+    // -----------------------------------
+    // Close Button Functionality
+    // -----------------------------------
+    document.getElementById("close-btn").addEventListener("click", function() {
+      // Reset the query window to its default state
+      document.getElementById("info-content").innerHTML = defaultMessage;
+      document.getElementById("info").style.display = "block";
+      updateCloseButtonVisibility();
+    });
+  </script>
+</body>
+</html>
