@@ -8,7 +8,8 @@
           color: '#4D90FE',
           contrastingColor: '#fff',
           show_last_node: false,
-          show_azimut: false
+          show_azimut: false,
+          pane: undefined
       },
 
       clickSpeed: 200,
@@ -333,7 +334,8 @@
               fillOpacity: 1,
               opacity: 1,
               fill: true,
-              type: type
+              type: type,
+              pane: this.options.pane
           };
 
           var a = this.prevLatlng ? this._map.latLngToContainerPoint(this.prevLatlng) : null,
@@ -356,7 +358,7 @@
               });
 
               options.icon = cicon;
-              options.marker = L.marker(p_latLng, { icon: cicon, type: type }).addTo(layer);
+              options.marker = L.marker(p_latLng, { icon: cicon, type: type, pane: this.options.pane }).addTo(layer);
               options.label = label;
           }
 
@@ -396,7 +398,8 @@
               color: this.options.color,
               weight: 2,
               opacity: 1,
-              dashArray: dashArray
+              dashArray: dashArray,
+              pane: this.options.pane
           });
 
           poly.addTo(layer);
@@ -413,14 +416,16 @@
                   color: this.options.color,
                   weight: 2,
                   opacity: 1,
-                  dashArray: dashArray
+                  dashArray: dashArray,
+                  pane: this.options.pane
               });
           } else {
               multi = L.polyline(latLngs, {
                   color: this.options.color,
                   weight: 2,
                   opacity: 1,
-                  dashArray: dashArray
+                  dashArray: dashArray,
+                  pane: this.options.pane
               });
           }
 
@@ -644,5 +649,44 @@
 
       layerSelected: function(e){}
   });
+
+  /* Public API for external controls */
+  L.Control.LinearMeasurement.prototype.start = function(){
+    var map_container = this._map && this._map.getContainer ? this._map.getContainer() : null;
+    if(!this.mainLayer){
+      this.initRuler();
+      if(this.link){ L.DomUtil.addClass(this.link, 'icon-active'); }
+      if(map_container){ L.DomUtil.addClass(map_container, 'ruler-map'); }
+    }
+  };
+
+  L.Control.LinearMeasurement.prototype.stop = function(){
+    var map_container = this._map && this._map.getContainer ? this._map.getContainer() : null;
+    if(this.mainLayer){
+      this.resetRuler(!!this.mainLayer);
+      if(this.link){ L.DomUtil.removeClass(this.link, 'icon-active'); }
+      if(map_container){ L.DomUtil.removeClass(map_container, 'ruler-map'); }
+    }
+  };
+
+  L.Control.LinearMeasurement.prototype.clear = function(){
+    try {
+      if(this.layer){
+        var toRemove = [];
+        this.layer.eachLayer(function(l){ toRemove.push(l); });
+        for(var i=0;i<toRemove.length;i++){ this.layer.removeLayer(toRemove[i]); }
+      }
+      if(this.mainLayer){
+        var grp = this.mainLayer, rm = [];
+        grp.eachLayer(function(l){ rm.push(l); });
+        for(var j=0;j<rm.length;j++){ grp.removeLayer(rm[j]); }
+      }
+      this.resetRuler(false);
+    } catch(e){}
+  };
+
+  L.Control.LinearMeasurement.prototype.isActive = function(){
+    return !!this.mainLayer;
+  };
 
 })();
