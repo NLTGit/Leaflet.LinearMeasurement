@@ -57,6 +57,10 @@ toolbar.onAdd = function() {
   var clearBtn = L.DomUtil.create('button', 'map-btn', div);
   clearBtn.type = 'button';
   clearBtn.innerHTML = 'Clear';
+  // Finish button
+  var finishBtn = L.DomUtil.create('button', 'map-btn', div);
+  finishBtn.type = 'button';
+  finishBtn.innerHTML = 'Finish';
   // Basemap select
   var select = L.DomUtil.create('select', '', div);
   var options = [
@@ -98,6 +102,9 @@ toolbar.onAdd = function() {
     try {
       if (measureCtrl && measureCtrl.clear) { measureCtrl.clear(); }
     } catch (e) { /* no-op */ }
+  });
+  L.DomEvent.on(finishBtn, 'click', function(){
+    try { if (measureCtrl && measureCtrl.finish) { measureCtrl.finish(); } } catch(e){}
   });
 
   // Basemap switching
