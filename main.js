@@ -1,8 +1,34 @@
 var map = L.map('map').setView([38.9072, -77.0369], 13);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+// Base layers
+var osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
+});
+
+var osmDE = L.tileLayer('https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+});
+
+var osmFrance = L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+});
+
+var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+});
+
+// Add default layer
+osmStandard.addTo(map);
+
+// Layer control
+var baseLayers = {
+    "OSM Standard": osmStandard,
+    "OSM DE": osmDE,
+    "OSM France": osmFrance,
+    "OSM HOT": osmHOT
+};
+
+L.control.layers(baseLayers, null, { collapsed: true }).addTo(map);
 
 var cost_underground = 12.55,
     cost_above_ground = 17.89,
