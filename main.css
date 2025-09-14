@@ -57,6 +57,7 @@ h1 {
   justify-content: space-between;
   gap: 24px;
   margin-top: 16px;
+  flex-wrap: wrap;
 }
 
 .footer-card {
@@ -95,6 +96,22 @@ h1 {
 .made-by {
   text-align: right;
 }
+
+/* Terminal-style status box */
+.terminal {
+  background: #0b1220;
+  color: #c8facc;
+  border: 1px solid #1f2a3a;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.terminal .muted { color: #7aa2b2; }
+.terminal-list { margin: 6px 0 0 16px; padding: 0; }
+.terminal-list li { margin: 4px 0; }
 
 /* Layout container and gradient bar */
 .container {

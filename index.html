@@ -21,7 +21,7 @@
 		  <div id="map"></div>
 		</div>
 		<script type="text/javascript" src="src/Leaflet.LinearMeasurement.js"></script>
-		<script src="main.js?v=15" ></script>
+		<script src="main.js?v=16" ></script>
 	    <div class="site-footer">
 	      <div class="footer-card" style="flex: 1;">
 	        <h3 class="footer-heading">Data Source List</h3>
@@ -31,6 +31,22 @@
 	          <li><a href="https://apps.nationalmap.gov" target="_blank" rel="noopener noreferrer">USGS Imagery (The National Map)</a></li>
 	          <li><a href="https://s2maps.eu/" target="_blank" rel="noopener noreferrer">EOX Sentinel-2 Cloudless</a></li>
 	        </ul>
+	      </div>
+	      <div class="footer-card" style="flex: 1;">
+	        <h3 class="footer-heading">Application Status</h3>
+	        <div class="terminal">
+	          <div><span class="muted">release</span> v0.15.0</div>
+	          <div><span class="muted">iteration</span> gh-pages v15</div>
+	          <div><span class="muted">status</span> Measure multi-segment flow stabilized; Finish button added</div>
+	          <div style="margin-top:8px;">Testing:</div>
+	          <ul class="terminal-list">
+	            <li>Start Measure → add 3+ vertices → Finish (dblclick and button)</li>
+	            <li>Cost popup shows only on finish</li>
+	            <li>Continuous polyline draws without gaps</li>
+	            <li>Pan/Measure toggle and Clear reset state</li>
+	            <li>Basemap switching retains measurement overlays</li>
+	          </ul>
+	        </div>
 	      </div>
 	      <div class="footer-card" style="flex: 1;">
 	        <h3 class="footer-heading">About this Project</h3>
