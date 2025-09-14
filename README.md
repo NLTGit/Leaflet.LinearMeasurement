@@ -141,8 +141,20 @@ map.addControl(new L.Control.LinearMeasurement({ unitSystem: 'imperial' }));
   <tr><td>radius</td> <td>3</td></tr>
   <tr><td>unitSystem</td> <td>imperial</td></tr>
   <tr><td>doubleClickSpeed</td> <td>300</td></tr>
+  <tr><td>pane</td> <td>undefined</td></tr>
 
 </table>
+
+<h2>Public API (external controls)</h2>
+
+```js
+const ctrl = new L.Control.LinearMeasurement({...});
+map.addControl(ctrl);
+ctrl.start();   // begin measuring
+ctrl.stop();    // end measuring and re-enable map interactions
+ctrl.clear();   // clear current measurement layers
+ctrl.isActive();
+```
 
 <h2>Requirements</h2>
 Leaflet 1.0.0+ (may work with earlier versions)
