@@ -1,14 +1,35 @@
 {
   "name": "leaflet-linear-measurement",
   "version": "0.0.1",
-  "dependencies": {
-    "gulp": "^3.9.0",
-    "gulp-clean": "^0.3.1",
-    "gulp-uglify": "^1.2.0"
+  "main": "dist/leaflet-linear-measurement.umd.js",
+  "module": "dist/leaflet-linear-measurement.esm.js",
+  "types": "",
+  "exports": {
+    ".": {
+      "import": "./dist/leaflet-linear-measurement.esm.js",
+      "require": "./dist/leaflet-linear-measurement.umd.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "sass",
+    "README.md",
+    "LICENSE",
+    "MIT-LICENSE.md"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "build:watch": "rollup -c -w"
   },
   "devDependencies": {
-    "gulp-sass": "^2.3.2"
+    "rollup": "^4.21.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-commonjs": "^25.0.8",
+    "@rollup/plugin-replace": "^5.0.7"
   },
-  "main": "src/Leaflet.LinearMeasurement.js",
+  "peerDependencies": {
+    "leaflet": ">=1.0.0"
+  },
   "style": "sass/leaflet.scss"
 }
