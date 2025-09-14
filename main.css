@@ -47,12 +47,8 @@ h1 {
 }
 
 .nlt-logo {
-  height: 10px;
+  height: 1.75em; /* match header text size */
   width: auto;
-  position: fixed;
-  top: 8px;
-  right: 12px;
-  z-index: 1000;
 }
 
 .site-footer {
