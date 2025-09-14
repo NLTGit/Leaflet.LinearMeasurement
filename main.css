@@ -113,6 +113,24 @@ h1 {
 .terminal-list { margin: 6px 0 0 16px; padding: 0; }
 .terminal-list li { margin: 4px 0; }
 
+/* Segment label on line midpoint */
+.seg-label {
+  background: rgba(255,255,255,0.9);
+  color: #073763;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+/* Popup window controls */
+.popup-window { position: relative; }
+.popup-header { display:flex; align-items:center; justify-content:space-between; font-weight:bold; margin-bottom:6px; }
+.popup-controls { display:flex; gap:6px; }
+.popup-btn { background: rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.4); border-radius:4px; padding:0 6px; cursor:pointer; font-size:12px; }
+.popup-btn:hover { background: rgba(255,255,255,0.3); }
+
 /* Layout container and gradient bar */
 .container {
   max-width: 1100px;

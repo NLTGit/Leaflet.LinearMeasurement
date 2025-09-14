@@ -104,7 +104,7 @@ toolbar.onAdd = function() {
     } catch (e) { /* no-op */ }
   });
   L.DomEvent.on(finishBtn, 'click', function(){
-    try { if (measureCtrl && measureCtrl.finish) { measureCtrl.finish(); } } catch(e){}
+    try { if (!measureCtrl) return; measureCtrl.finish(); } catch(e){}
   });
 
   // Basemap switching

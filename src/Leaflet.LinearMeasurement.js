@@ -299,6 +299,25 @@
               this.last = t;
           }
 
+          // Add a small label at the segment midpoint with length and costs
+          try {
+            var midx = (p2.x + p1.x) / 2, midy = (p2.y + p1.y) / 2;
+            var midLatLng = this._map.containerPointToLatLng(L.point(midx, midy));
+            var feet = original * this.UNIT_CONV; // meters -> km unless imperial; recompute robustly
+            if (this.UNIT === 'mi') {
+              // original is miles when imperial; convert miles to feet
+              feet = original * this.SUB_UNIT_CONV; // mi -> ft (5280)
+            } else {
+              // original is km when metric; convert to meters then to feet for a unified label
+              feet = original * 1000 * 3.28084;
+            }
+            var costA = (this.options.costAboveGround || 0) * feet;
+            var costU = (this.options.costUnderground || 0) * feet;
+            var segHtml = '<span class="seg-label">'+(feet.toFixed(0)).toLocaleString()+' ft · $'+(Math.round(costA)).toLocaleString()+' / $'+(Math.round(costU)).toLocaleString()+'</span>';
+            var segIcon = L.divIcon({ className: 'seg-label', html: segHtml });
+            L.marker(midLatLng, { icon: segIcon, interactive: false, keyboard: false, pane: this.options.pane }).addTo(this.layer);
+          } catch(e) {}
+
           return original;
       },
 
@@ -658,13 +677,20 @@
     }
 
     var summary = [
-      '<div class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+';">',
-      '  <div style="font-weight:bold; margin-bottom:6px;">measurement/cost summary</div>',
+      '<div class="total-popup-content popup-window" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+';">',
+      '  <div class="popup-header">',
+      '    <span>measurement/cost summary</span>',
+      '    <span class="popup-controls">',
+      '      <button class="popup-btn" data-action="min">–</button>',
+      '      <button class="popup-btn" data-action="max">+</button>',
+      '      <button class="popup-btn" data-action="close">×</button>',
+      '    </span>',
+      '  </div>',
       '  <div>Total Length: '+fmt(totalFeet)+' ft</div>',
       '  <div>Total Cost (Above): $'+fmt(totalCostAbove)+'</div>',
       '  <div>Total Cost (Underground): $'+fmt(totalCostUnder)+'</div>',
       '</div>',
-      '<div style="background:#fff; color:#333; padding:8px 10px; border-radius:6px; margin-top:6px; max-height:220px; overflow:auto;">',
+      '<div class="popup-body" style="background:#fff; color:#333; padding:8px 10px; border-radius:6px; margin-top:6px; max-height:220px; overflow:auto;">',
       '  <ul style="margin:0; padding-left:18px;">'+lines.join('')+'</ul>',
       '</div>'
     ].join('');
@@ -682,6 +708,23 @@
 
     // Finalize and fire selected for external hooks
     var data = { total: { scalar: totalFeet, unit: 'ft' }, total_label: this.total, unit: this.UNIT_CONV, sub_unit: this.SUB_UNIT_CONV };
+    // attach popup control handlers
+    try {
+      var node = this.total && this.total._icon ? this.total._icon : null;
+      if (node) {
+        var header = node.querySelector('.popup-window');
+        var body = node.parentElement.querySelector('.popup-body');
+        node.addEventListener('click', function(ev){
+          var act = ev.target && ev.target.getAttribute('data-action');
+          if(!act) return;
+          ev.stopPropagation();
+          if(act==='close') { if(me.layer){ me.layer.removeLayer(me.total); } }
+          if(act==='min') { if(body){ body.style.display='none'; } }
+          if(act==='max') { if(body){ body.style.display='block'; } }
+        });
+      }
+    } catch(e){}
+
     this.layer.fireEvent('selected', data);
     this.resetRuler(false);
   };
