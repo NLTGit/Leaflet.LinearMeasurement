@@ -180,6 +180,10 @@ var linearCore = new Core({
   features: ['ruler']
 });
 map.addControl(linearCore);
+// Hide the default ruler control UI; functionality is driven via the toolbar
+if (linearCore && linearCore._container) {
+  try { linearCore._container.style.display = 'none'; } catch(e) {}
+}
 
 // Open the measurement control by default (highlighted via CSS .icon-active)
 setTimeout(function(){
