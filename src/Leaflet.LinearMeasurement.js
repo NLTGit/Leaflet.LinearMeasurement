@@ -680,6 +680,7 @@
       '    <span class="popup-controls">',
       '      <button class="popup-btn" data-action="min">–</button>',
       '      <button class="popup-btn" data-action="max">+</button>',
+      '      <button class="popup-btn" data-action="print">Print</button>',
       '      <button class="popup-btn" data-action="close">×</button>',
       '    </span>',
       '  </div>',
@@ -727,6 +728,27 @@
           if(act==='close') { try{ if(me.layer && me.total){ me.layer.removeLayer(me.total); } }catch(e){} }
           if(act==='min') { if(body){ body.style.display='none'; } }
           if(act==='max') { if(body){ body.style.display='block'; } }
+          if(act==='print') {
+            try {
+              var w = window.open('', '_blank');
+              var branding = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;"><img src="https://newlighttechnologies.com/hubfs/nlt-square.png" alt="NLT" style="height:36px;"/><div><div style="font-size:18px;font-weight:600;">Measurement Report (Demo)</div><div style="color:#666;font-size:12px;">This is for demo purposes only and not an actual cost analysis worksheet for your project. Contact us at <a href="https://newlighttechnologies.com" target="_blank">NewLightTechnologies.com</a> or see <a href="https://newlighttechnologies.com/solutions#analytics-insights" target="_blank">UtilityLine capabilities</a>.</div></div></div>';
+              var doc = [
+                '<!doctype html><html><head><meta charset="utf-8"/>',
+                '<title>Measurement Report</title>',
+                '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />',
+                '<style>body{font-family:Arial,Helvetica,sans-serif;padding:16px;} #map{height:420px;margin:10px 0;border:1px solid #ddd;border-radius:6px;} .card{border:1px solid #ddd;border-radius:6px;padding:10px;} .muted{color:#666}</style>',
+                '</head><body>',
+                branding,
+                '<div class="muted">Total Length: '+fmt(totalMeters)+' m — Above: $'+fmt(totalCostAbove)+' — Underground: $'+fmt(totalCostUnder)+'</div>',
+                '<div id="map"></div>',
+                '<div class="card"><strong>Segments</strong><ul>'+lines.join('')+'</ul></div>',
+                '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>',
+                '<script>(function(){\n var map=L.map("map").setView(['+((minLat+maxLat)/2).toFixed(6)+','+((minLng+maxLng)/2).toFixed(6)+'], 12);\n L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);\n var latlngs='+JSON.stringify((function(){var arr=[]; for(var s=0;s<segments.length;s++){arr.push([segments[s][0].lat,segments[s][0].lng]); arr.push([segments[s][1].lat,segments[s][1].lng]);} return arr;})())+';\n var poly=L.polyline(latlngs,{color:"#048abf"}).addTo(map);\n map.fitBounds(poly.getBounds(),{padding:[20,20]});\n setTimeout(function(){window.print();},600);\n})();</script>',
+                '</body></html>'
+              ].join('');
+              w.document.open(); w.document.write(doc); w.document.close();
+            } catch(e){}
+          }
         });
       }
     } catch(e){}
