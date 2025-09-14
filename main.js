@@ -42,8 +42,69 @@ var baseLayers = {
     "Sentinel-2 Cloudless (Satellite)": s2cloudless
 };
 
-// Basemap control in top-left
-L.control.layers(baseLayers, null, { collapsed: true, position: 'topleft' }).addTo(map);
+// Create a simple horizontal toolbar (top-right) with pan, measure, and basemap select
+var toolbar = L.control({ position: 'topright' });
+toolbar.onAdd = function() {
+  var div = L.DomUtil.create('div', 'map-toolbar leaflet-control');
+  // Pan button
+  var panBtn = L.DomUtil.create('button', 'map-btn active', div);
+  panBtn.type = 'button';
+  panBtn.innerHTML = 'Pan';
+  // Measure button
+  var measureBtn = L.DomUtil.create('button', 'map-btn', div);
+  measureBtn.type = 'button';
+  measureBtn.innerHTML = 'Measure';
+  // Basemap select
+  var select = L.DomUtil.create('select', '', div);
+  var options = [
+    { label: 'OSM Standard', value: 'standard' },
+    { label: 'OSM HOT', value: 'hot' },
+    { label: 'USGS Imagery', value: 'usgs' },
+    { label: 'Sentinel-2 Cloudless', value: 's2' }
+  ];
+  options.forEach(function(opt){
+    var o = document.createElement('option');
+    o.value = opt.value; o.text = opt.label; select.appendChild(o);
+  });
+
+  // Stop map drag when interacting with toolbar
+  L.DomEvent.disableClickPropagation(div);
+  L.DomEvent.on(div, 'mousewheel', L.DomEvent.stopPropagation);
+
+  // Button handlers
+  L.DomEvent.on(panBtn, 'click', function(){
+    panBtn.classList.add('active');
+    measureBtn.classList.remove('active');
+    map.dragging.enable();
+    // Turn off ruler if active
+    if (toolbar._rulerActive) {
+      map.fire('linear_feature_on'); // toggle off via control click simulation
+      toolbar._rulerActive = false;
+    }
+  });
+  L.DomEvent.on(measureBtn, 'click', function(){
+    measureBtn.classList.add('active');
+    panBtn.classList.remove('active');
+    map.dragging.disable();
+    map.fire('linear_feature_on');
+    toolbar._rulerActive = true;
+  });
+
+  // Basemap switching
+  var currentBase = osmStandard;
+  select.value = 'standard';
+  L.DomEvent.on(select, 'change', function(){
+    map.removeLayer(currentBase);
+    if (select.value === 'hot') currentBase = osmHOT;
+    else if (select.value === 'usgs') currentBase = usgsImagery;
+    else if (select.value === 's2') currentBase = s2cloudless;
+    else currentBase = osmStandard;
+    currentBase.addTo(map);
+  });
+
+  return div;
+};
+toolbar.addTo(map);
 
 var cost_underground = 12.55,
     cost_above_ground = 17.89,
