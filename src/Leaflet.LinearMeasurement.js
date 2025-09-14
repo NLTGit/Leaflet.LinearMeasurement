@@ -89,9 +89,8 @@
               map.tap.disable();
           }
 
-          this.dblClickEventFn = function(e){
-              L.DomEvent.stop(e);
-          };
+          this.dblClickEventFn = function(e){ L.DomEvent.stop(e); };
+          map.on('dblclick', this.finish, this);
 
           this.keyDownFn = function(e) {
             // ctrl-x cancel measurement
@@ -108,27 +107,8 @@
           }
 
           this.clickEventFn = function(e){
-            console.log(e)
-            if(me.clickHandle){
-              clearTimeout(me.clickHandle);
-              me.clickHandle = 0;
-
-              if(me.options.show_last_node){
-                me.preClick(e);
-                me.getMouseClickHandler(e);
-              }
-
-              me.getDblClickHandler(e);
-
-            } else {
-              me.preClick(e);
-
-              me.clickHandle = setTimeout(function(){
-                me.getMouseClickHandler(e);
-                me.clickHandle = 0;
-
-              }, me.clickSpeed);
-            }
+            me.preClick(e);
+            me.getMouseClickHandler(e);
           };
         
           this.moveEventFn = function(e){
@@ -155,6 +135,7 @@
           if(resetLayer){
               map.off('click', this.clickEventFn, this);
               map.off('mousemove', this.moveEventFn, this);
+              map.off('dblclick', this.finish, this);
 
               if(this.mainLayer){
                   this._map.removeLayer(this.mainLayer);
@@ -585,59 +566,7 @@
           }
       },
 
-      getDblClickHandler: function(e){
-          var azimut = '',
-              me = this;
-
-          if(!this.total){
-              return;
-          }
-
-          this.layer.off('click');
-          this.layer.off('keydown');          
-          L.DomEvent.stop(e);
-
-          if(this.options.show_azimut){
-            var style = 'color: '+this.options.contrastingColor+';';
-            azimut = ' <span class="azimut azimut-final" style="'+style+'"> &nbsp; '+this.lastAzimut+'&deg;</span>';
-          }
-
-          var workspace = this.layer,
-              label = this.measure.scalar + ' ' + this.measure.unit + ' ',
-              total_scalar = this.measure.unit === this.SUB_UNIT ? this.measure.scalar/this.UNIT_CONV : this.measure.scalar,
-              total_latlng = this.total.getLatLng(),
-              total_label = this.total,
-              html = [
-                  '<div class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label + azimut,
-                  '  <svg class="close" viewbox="0 0 45 35">',
-                  '   <path style="stroke: '+this.options.contrastingColor+'" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
-                  '  </svg>',
-                  '</div>'
-              ].join('');
-
-          this.totalIcon = L.divIcon({ className: 'total-popup', html: html });
-          this.total.setIcon(this.totalIcon);
-
-          var data = {
-              total: this.measure,
-              total_label: total_label,
-              unit: this.UNIT_CONV,
-              sub_unit: this.SUB_UNIT_CONV
-          };
-
-          var fireSelected = function(e){
-              if(L.DomUtil.hasClass(e.originalEvent.target, 'close')){
-                  me.mainLayer.removeLayer(workspace);
-              } else {
-                  workspace.fireEvent('selected', data);
-              }
-          };
-
-          workspace.on('click', fireSelected);
-          workspace.fireEvent('selected', data);
-
-          this.resetRuler(false);
-      },
+      getDblClickHandler: function(e){ L.DomEvent.stop(e); this.finish(); },
 
       purgeLayers: function(layers){
           for(var i in layers){
