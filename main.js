@@ -5,16 +5,17 @@ var osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.pn
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 });
 
-var osmDE = L.tileLayer('https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-});
-
-var osmFrance = L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-});
-
 var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+});
+
+// Open imagery providers
+var usgsImagery = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Imagery: USGS The National Map'
+});
+
+var s2cloudless = L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2021_3857/default/g/{z}/{y}/{x}.jpg', {
+    attribution: 'Imagery: Sentinel-2 cloudless by EOX IT Services GmbH'
 });
 
 // Add default layer
@@ -23,9 +24,9 @@ osmStandard.addTo(map);
 // Layer control
 var baseLayers = {
     "OSM Standard": osmStandard,
-    "OSM DE": osmDE,
-    "OSM France": osmFrance,
-    "OSM HOT": osmHOT
+    "OSM HOT": osmHOT,
+    "USGS Imagery (Aerial)": usgsImagery,
+    "Sentinel-2 Cloudless (Satellite)": s2cloudless
 };
 
 L.control.layers(baseLayers, null, { collapsed: true }).addTo(map);
