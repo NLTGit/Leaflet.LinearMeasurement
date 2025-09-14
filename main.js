@@ -1,4 +1,6 @@
-var map = L.map('map').setView([38.9072, -77.0369], 13);
+var map = L.map('map', {
+  zoomControl: false
+}).setView([38.9072, -77.0369], 10);
 
 // Base layers
 var osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -21,6 +23,17 @@ var s2cloudless = L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-
 // Add default layer
 osmStandard.addTo(map);
 
+// Add a custom top-left control group container and move controls there
+var controlContainer = L.control({ position: 'topleft' });
+controlContainer.onAdd = function() {
+  var div = L.DomUtil.create('div', 'leaflet-bar');
+  return div;
+};
+controlContainer.addTo(map);
+
+// Re-add default zoom control in top-left inside group
+L.control.zoom({ position: 'topleft' }).addTo(map);
+
 // Layer control
 var baseLayers = {
     "OSM Standard": osmStandard,
@@ -29,7 +42,8 @@ var baseLayers = {
     "Sentinel-2 Cloudless (Satellite)": s2cloudless
 };
 
-L.control.layers(baseLayers, null, { collapsed: true }).addTo(map);
+// Basemap control in top-left
+L.control.layers(baseLayers, null, { collapsed: true, position: 'topleft' }).addTo(map);
 
 var cost_underground = 12.55,
     cost_above_ground = 17.89,
@@ -79,6 +93,18 @@ var Core = L.Control.LinearCore.extend({
 
 map.addControl(new Core({
   unitSystem: 'imperial',
-  color: '#FF0080',
+  color: '#048abf',
   features: ['ruler']
 }));
+
+// Open the measurement control by default (highlighted via CSS .icon-active)
+setTimeout(function(){
+  map.fire('linear_feature_on');
+}, 0);
+
+// Fit map to approximate DC beltway bounds
+var beltwayBounds = L.latLngBounds(
+  [39.05, -77.35], // NW of beltway
+  [38.70, -76.75]  // SE of beltway
+);
+map.fitBounds(beltwayBounds, { padding: [10, 10] });

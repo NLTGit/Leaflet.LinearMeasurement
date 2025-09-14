@@ -47,8 +47,12 @@ h1 {
 }
 
 .nlt-logo {
-  height: 40px;
+  height: 10px;
   width: auto;
+  position: fixed;
+  top: 8px;
+  right: 12px;
+  z-index: 1000;
 }
 
 .site-footer {
@@ -94,4 +98,38 @@ h1 {
 
 .made-by {
   text-align: right;
+}
+
+/* Layout container and gradient bar */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.gradient-bar {
+  height: 8px;
+  background: linear-gradient(90deg, #048abf 0%, #073763 100%);
+  border-radius: 0 0 8px 8px;
+  margin: 0 0 12px 0;
+}
+
+/* Map container tweaks */
+#map {
+  height: 70vh;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* Grouped control corner and measurement highlight */
+.leaflet-control.leaflet-bar .icon-active {
+  background-color: #048abf !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  body { padding: 24px; }
+  #map { height: 60vh; }
+  .header { flex-direction: row; }
 }
