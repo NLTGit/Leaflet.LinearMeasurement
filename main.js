@@ -23,16 +23,7 @@ var s2cloudless = L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-
 // Add default layer
 osmStandard.addTo(map);
 
-// Add a custom top-left control group container and move controls there
-var controlContainer = L.control({ position: 'topleft' });
-controlContainer.onAdd = function() {
-  var div = L.DomUtil.create('div', 'leaflet-bar');
-  return div;
-};
-controlContainer.addTo(map);
-
-// Re-add default zoom control in top-left inside group
-L.control.zoom({ position: 'topleft' }).addTo(map);
+// (Default zoom/layers controls replaced by custom toolbar below)
 
 // Layer control
 var baseLayers = {
@@ -42,10 +33,18 @@ var baseLayers = {
     "Sentinel-2 Cloudless (Satellite)": s2cloudless
 };
 
-// Create a simple horizontal toolbar (top-right) with pan, measure, and basemap select
+// Create a simple horizontal toolbar (top-right) with zoom, pan, measure, clear, and basemap select
 var toolbar = L.control({ position: 'topright' });
 toolbar.onAdd = function() {
   var div = L.DomUtil.create('div', 'map-toolbar leaflet-control');
+  // Zoom in
+  var zoomInBtn = L.DomUtil.create('button', 'map-btn', div);
+  zoomInBtn.type = 'button';
+  zoomInBtn.innerHTML = '+';
+  // Zoom out
+  var zoomOutBtn = L.DomUtil.create('button', 'map-btn', div);
+  zoomOutBtn.type = 'button';
+  zoomOutBtn.innerHTML = '−';
   // Pan button
   var panBtn = L.DomUtil.create('button', 'map-btn active', div);
   panBtn.type = 'button';
@@ -54,6 +53,10 @@ toolbar.onAdd = function() {
   var measureBtn = L.DomUtil.create('button', 'map-btn', div);
   measureBtn.type = 'button';
   measureBtn.innerHTML = 'Measure';
+  // Clear measurements button
+  var clearBtn = L.DomUtil.create('button', 'map-btn', div);
+  clearBtn.type = 'button';
+  clearBtn.innerHTML = 'Clear';
   // Basemap select
   var select = L.DomUtil.create('select', '', div);
   var options = [
@@ -72,13 +75,19 @@ toolbar.onAdd = function() {
   L.DomEvent.on(div, 'mousewheel', L.DomEvent.stopPropagation);
 
   // Button handlers
+  L.DomEvent.on(zoomInBtn, 'click', function(){ map.zoomIn(); });
+  L.DomEvent.on(zoomOutBtn, 'click', function(){ map.zoomOut(); });
   L.DomEvent.on(panBtn, 'click', function(){
     panBtn.classList.add('active');
     measureBtn.classList.remove('active');
     map.dragging.enable();
     // Turn off ruler if active
-    if (toolbar._rulerActive) {
-      map.fire('linear_feature_on'); // toggle off via control click simulation
+    if (toolbar._rulerActive && typeof linearCore !== 'undefined') {
+      try {
+        linearCore.resetRuler(true);
+        if (linearCore.link) { L.DomUtil.removeClass(linearCore.link, 'icon-active'); }
+        L.DomUtil.removeClass(map.getContainer(), 'ruler-map');
+      } catch(e){}
       toolbar._rulerActive = false;
     }
   });
@@ -88,6 +97,19 @@ toolbar.onAdd = function() {
     map.dragging.disable();
     map.fire('linear_feature_on');
     toolbar._rulerActive = true;
+  });
+  L.DomEvent.on(clearBtn, 'click', function(){
+    try {
+      if (linearCore && linearCore.mainLayer) {
+        linearCore.mainLayer.eachLayer(function(l){ linearCore.mainLayer.removeLayer(l); });
+      }
+      if (linearCore && typeof linearCore.purgeGeoJsons === 'function') {
+        linearCore.purgeGeoJsons();
+      }
+      if (typeof linearCore.resetRuler === 'function') {
+        linearCore.resetRuler();
+      }
+    } catch (e) { /* no-op */ }
   });
 
   // Basemap switching
@@ -152,11 +174,12 @@ var Core = L.Control.LinearCore.extend({
     }
 });
 
-map.addControl(new Core({
+var linearCore = new Core({
   unitSystem: 'imperial',
   color: '#048abf',
   features: ['ruler']
-}));
+});
+map.addControl(linearCore);
 
 // Open the measurement control by default (highlighted via CSS .icon-active)
 setTimeout(function(){
