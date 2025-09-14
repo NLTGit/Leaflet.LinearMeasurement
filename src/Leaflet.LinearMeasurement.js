@@ -177,6 +177,7 @@
           this.multi = null;
           this.latlngs = null;
           this.latlngsList = [];
+          this.vertices = [];
           this.sum = 0;
           this.distance = 0;
           this.separation = 1;
@@ -469,39 +470,36 @@
 
         me.fixedLast = me.last;
         me.prevLatlng = e.latlng;
-        me.sum = 0;
+        // keep cumulative sum across vertices; do not reset here
       },
 
       getMouseClickHandler: function(e){
           var me = this;
           me.fixedLast = me.last;
-          me.sum = 0;
 
-          if(me.poly){
-              me.latlngsList.push(me.latlngs);
+          if(!me.vertices){ me.vertices = []; }
+          // Add current click as next vertex
+          me.vertices.push(e.latlng);
 
-              if(!me.multi){
-                  me.multi = me.renderMultiPolyline(me.latlngsList, '5 5', me.layer, 'dot');
-              } else {
-                  me.multi.setLatLngs(me.latlngsList);
+          // Build or update a single continuous polyline
+          if(!me.poly){
+              if(me.vertices.length >= 2){
+                  me.poly = me.renderPolyline(me.vertices, '5 5', me.layer);
               }
-          }
-
-          var o, dis;
-          for(var l in me.latlngsList){
-              o = me.latlngsList[l];
-              me.sum += o[0].distanceTo(o[1])/me.UNIT_CONV;
-          }
-
-          if(me.measure.unit === this.SUB_UNIT){
-              dis = me.sum * me.SUB_UNIT_CONV;
           } else {
-              dis = me.sum;
+              me.poly.setLatLngs(me.vertices);
           }
 
-          var s = dis.toFixed(2);
+          // Update cumulative sum across vertices
+          me.sum = 0;
+          for(var i=1;i<me.vertices.length;i++){
+              me.sum += me.vertices[i-1].distanceTo(me.vertices[i]) / me.UNIT_CONV;
+          }
 
-          me.renderCircle(e.latlng, 0, me.layer, 'dot', parseInt(s) ? (s + ' ' + me.measure.unit) : '' );
+          // Render a dot label at this vertex with current distance
+          var dis = (me.measure && me.measure.unit === me.SUB_UNIT) ? me.sum * me.SUB_UNIT_CONV : me.sum;
+          var s = dis.toFixed(2);
+          me.renderCircle(e.latlng, 0, me.layer, 'dot', parseInt(s) ? (s + ' ' + (me.measure ? me.measure.unit : me.SUB_UNIT)) : '' );
           me.prevLatlng = e.latlng;
       },
 
@@ -511,19 +509,27 @@
           if(this.prevLatlng){
               var latLng = e.latlng;
 
-              this.latlngs = [this.prevLatlng, e.latlng];
+              // Preview line: existing vertices plus current mouse
+              var preview = (this.vertices && this.vertices.length) ? this.vertices.slice() : [];
+              if(preview.length === 0){ preview.push(this.prevLatlng); }
+              preview[preview.length] = e.latlng;
 
               if(!this.poly){
-                  this.poly = this.renderPolyline(this.latlngs, '5 5', this.layer);
+                  this.poly = this.renderPolyline(preview, '5 5', this.layer);
               } else {
-                  this.poly.setLatLngs(this.latlngs);
+                  this.poly.setLatLngs(preview);
               }
 
               /* Distance in miles/meters */
-              this.distance = parseFloat(this.prevLatlng.distanceTo(e.latlng))/this.UNIT_CONV;
+              var total = 0;
+              var arr = preview;
+              for(var i=1;i<arr.length;i++){
+                  total += arr[i-1].distanceTo(arr[i]) / this.UNIT_CONV;
+              }
+              this.distance = total;
 
               /* scalar and unit */
-              this.measure = this.formatDistance(this.distance + this.sum, 2);
+              this.measure = this.formatDistance(this.distance, 2);
 
               var a = this.prevLatlng ? this._map.latLngToContainerPoint(this.prevLatlng) : null,
                   b = this._map.latLngToContainerPoint(latLng);
