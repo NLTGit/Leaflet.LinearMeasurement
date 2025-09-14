@@ -81,13 +81,9 @@ toolbar.onAdd = function() {
     panBtn.classList.add('active');
     measureBtn.classList.remove('active');
     map.dragging.enable();
-    // Turn off ruler if active
-    if (toolbar._rulerActive && typeof linearCore !== 'undefined') {
-      try {
-        linearCore.resetRuler(true);
-        if (linearCore.link) { L.DomUtil.removeClass(linearCore.link, 'icon-active'); }
-        L.DomUtil.removeClass(map.getContainer(), 'ruler-map');
-      } catch(e){}
+    // Turn off measurement if active
+    if (toolbar._rulerActive && measureCtrl && measureCtrl.stop) {
+      try { measureCtrl.stop(); } catch(e){}
       toolbar._rulerActive = false;
     }
   });
@@ -95,20 +91,12 @@ toolbar.onAdd = function() {
     measureBtn.classList.add('active');
     panBtn.classList.remove('active');
     map.dragging.disable();
-    map.fire('linear_feature_on');
+    if (measureCtrl && measureCtrl.start) { measureCtrl.start(); }
     toolbar._rulerActive = true;
   });
   L.DomEvent.on(clearBtn, 'click', function(){
     try {
-      if (linearCore && linearCore.mainLayer) {
-        linearCore.mainLayer.eachLayer(function(l){ linearCore.mainLayer.removeLayer(l); });
-      }
-      if (linearCore && typeof linearCore.purgeGeoJsons === 'function') {
-        linearCore.purgeGeoJsons();
-      }
-      if (typeof linearCore.resetRuler === 'function') {
-        linearCore.resetRuler();
-      }
+      if (measureCtrl && measureCtrl.clear) { measureCtrl.clear(); }
     } catch (e) { /* no-op */ }
   });
 
@@ -140,49 +128,38 @@ var cost_underground = 12.55,
         return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     };
 
-var Core = L.Control.LinearCore.extend({
-    onSelect: function(e){
-
-        if(!e.total){
-          return;
-        }
-
-        var distance = e.total.scalar;
-
-        if(e.total.unit === 'mi'){
-            distance *= e.sub_unit;
-
-        } else if(e.total.unit === 'km'){
-            distance *= 3280.84;
-
-        } else if(e.total.unit === 'm'){
-            distance *= 3.28084;
-        }
-
-        var data = {
-            total_above_ground: numberWithCommas(L.Util.formatNum(cost_above_ground * distance, 2)),
-            total_underground: numberWithCommas(L.Util.formatNum(cost_underground * distance, 2))
-        };
-
-        if(e.rulerOn){
-            var content = L.Util.template(html, data),
-                popup = L.popup().setContent(content);
-
-            e.total_label.bindPopup(popup, { offset: [45, 0] });
-            e.total_label.openPopup();
-        }
+// Extend the measurement control to hook into completion and show costs
+var Measurement = L.Control.LinearMeasurement.extend({
+  layerSelected: function(e){
+    if(!e || !e.total) return;
+    var distance = e.total.scalar;
+    if(e.total.unit === 'mi'){
+      distance *= e.sub_unit;
+    } else if(e.total.unit === 'km'){
+      distance *= 3280.84;
+    } else if(e.total.unit === 'm'){
+      distance *= 3.28084;
     }
+    var data = {
+      total_above_ground: numberWithCommas(L.Util.formatNum(cost_above_ground * distance, 2)),
+      total_underground: numberWithCommas(L.Util.formatNum(cost_underground * distance, 2))
+    };
+    var content = L.Util.template(html, data), popup = L.popup().setContent(content);
+    if (e.total_label && e.total_label.bindPopup) {
+      e.total_label.bindPopup(popup, { offset: [45, 0] });
+      e.total_label.openPopup();
+    }
+  }
 });
 
-var linearCore = new Core({
+var measureCtrl = new Measurement({
   unitSystem: 'imperial',
-  color: '#048abf',
-  features: ['ruler']
+  color: '#048abf'
 });
-map.addControl(linearCore);
-// Hide the default ruler control UI; functionality is driven via the toolbar
-if (linearCore && linearCore._container) {
-  try { linearCore._container.style.display = 'none'; } catch(e) {}
+map.addControl(measureCtrl);
+// Hide the default control button; we use our own toolbar
+if (measureCtrl && measureCtrl._container) {
+  try { measureCtrl._container.style.display = 'none'; } catch(e) {}
 }
 
 // Open the measurement control by default (highlighted via CSS .icon-active)
