@@ -303,17 +303,16 @@
           try {
             var midx = (p2.x + p1.x) / 2, midy = (p2.y + p1.y) / 2;
             var midLatLng = this._map.containerPointToLatLng(L.point(midx, midy));
-            var feet = original * this.UNIT_CONV; // meters -> km unless imperial; recompute robustly
+            // original here is in km (metric) or mi (imperial); convert to meters unified
+            var meters;
             if (this.UNIT === 'mi') {
-              // original is miles when imperial; convert miles to feet
-              feet = original * this.SUB_UNIT_CONV; // mi -> ft (5280)
+              meters = original * 1609.344; // miles -> meters
             } else {
-              // original is km when metric; convert to meters then to feet for a unified label
-              feet = original * 1000 * 3.28084;
+              meters = original * 1000; // km -> meters
             }
-            var costA = (this.options.costAboveGround || 0) * feet;
-            var costU = (this.options.costUnderground || 0) * feet;
-            var segHtml = '<span class="seg-label">'+(feet.toFixed(0)).toLocaleString()+' ft · $'+(Math.round(costA)).toLocaleString()+' / $'+(Math.round(costU)).toLocaleString()+'</span>';
+            var costA = (this.options.costAboveGround || 0) * meters;
+            var costU = (this.options.costUnderground || 0) * meters;
+            var segHtml = '<span class="seg-label">'+(meters.toFixed(2))+' m · $'+(costA.toFixed(2))+' / $'+(costU.toFixed(2))+'</span>';
             var segIcon = L.divIcon({ className: 'seg-label', html: segHtml });
             L.marker(midLatLng, { icon: segIcon, interactive: false, keyboard: false, pane: this.options.pane }).addTo(this.layer);
           } catch(e) {}
@@ -656,8 +655,7 @@
 
     if(segments.length === 0){ return; }
 
-    var feetPerMeter = 3.28084;
-    var totalFeet = 0;
+    var totalMeters = 0;
     var totalCostAbove = 0;
     var totalCostUnder = 0;
     var lines = [];
@@ -667,13 +665,12 @@
     for(var j=0;j<segments.length;j++){
       var a = segments[j][0], b = segments[j][1];
       var meters = a.distanceTo(b);
-      var feet = meters * feetPerMeter;
-      var costA = feet * (me.options.costAboveGround || 0);
-      var costU = feet * (me.options.costUnderground || 0);
-      totalFeet += feet;
+      var costA = meters * (me.options.costAboveGround || 0);
+      var costU = meters * (me.options.costUnderground || 0);
+      totalMeters += meters;
       totalCostAbove += costA;
       totalCostUnder += costU;
-      lines.push('<li>Segment '+(j+1)+': '+fmt(feet)+' ft — Above: $'+fmt(costA)+' | Underground: $'+fmt(costU)+'</li>');
+      lines.push('<li>Segment '+(j+1)+': '+fmt(meters)+' m — Above: $'+fmt(costA)+' | Underground: $'+fmt(costU)+'</li>');
     }
 
     var summary = [
@@ -686,7 +683,7 @@
       '      <button class="popup-btn" data-action="close">×</button>',
       '    </span>',
       '  </div>',
-      '  <div>Total Length: '+fmt(totalFeet)+' ft</div>',
+      '  <div>Total Length: '+fmt(totalMeters)+' m</div>',
       '  <div>Total Cost (Above): $'+fmt(totalCostAbove)+'</div>',
       '  <div>Total Cost (Underground): $'+fmt(totalCostUnder)+'</div>',
       '</div>',
@@ -695,9 +692,19 @@
       '</div>'
     ].join('');
 
-    // Place popup at last point
-    var lastPair = segments[segments.length-1];
-    var at = lastPair[1];
+    // Place popup at south-east of bounding box with offset
+    var minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+    for(var b=0;b<segments.length;b++){
+      var a1 = segments[b][0], b1 = segments[b][1];
+      [a1,b1].forEach(function(ll){
+        if(ll.lat < minLat) minLat = ll.lat;
+        if(ll.lat > maxLat) maxLat = ll.lat;
+        if(ll.lng < minLng) minLng = ll.lng;
+        if(ll.lng > maxLng) maxLng = ll.lng;
+      });
+    }
+    var se = L.latLng(minLat, maxLng);
+    var at = this._map.unproject(this._map.project(se).add([30,30]));
     var icon = L.divIcon({ className: 'total-popup', html: summary });
     if(this.total){
       this.total.setLatLng(at);
@@ -707,18 +714,17 @@
     }
 
     // Finalize and fire selected for external hooks
-    var data = { total: { scalar: totalFeet, unit: 'ft' }, total_label: this.total, unit: this.UNIT_CONV, sub_unit: this.SUB_UNIT_CONV };
+    var data = { total: { scalar: totalMeters, unit: 'm' }, total_label: this.total, unit: this.UNIT_CONV, sub_unit: this.SUB_UNIT_CONV };
     // attach popup control handlers
     try {
       var node = this.total && this.total._icon ? this.total._icon : null;
       if (node) {
-        var header = node.querySelector('.popup-window');
-        var body = node.parentElement.querySelector('.popup-body');
+        var body = node.querySelector('.popup-body');
         node.addEventListener('click', function(ev){
           var act = ev.target && ev.target.getAttribute('data-action');
           if(!act) return;
-          ev.stopPropagation();
-          if(act==='close') { if(me.layer){ me.layer.removeLayer(me.total); } }
+          ev.preventDefault(); ev.stopPropagation();
+          if(act==='close') { try{ if(me.layer && me.total){ me.layer.removeLayer(me.total); } }catch(e){} }
           if(act==='min') { if(body){ body.style.display='none'; } }
           if(act==='max') { if(body){ body.style.display='block'; } }
         });
