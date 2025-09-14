@@ -12,7 +12,7 @@
           pane: undefined
       },
 
-      clickSpeed: 120,
+      clickSpeed: 200,
 
       onAdd: function (map) {
           var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
@@ -177,7 +177,6 @@
           this.multi = null;
           this.latlngs = null;
           this.latlngsList = [];
-          this.vertices = [];
           this.sum = 0;
           this.distance = 0;
           this.separation = 1;
@@ -470,36 +469,39 @@
 
         me.fixedLast = me.last;
         me.prevLatlng = e.latlng;
-        // keep cumulative sum across vertices; do not reset here
+        me.sum = 0;
       },
 
       getMouseClickHandler: function(e){
           var me = this;
           me.fixedLast = me.last;
-
-          if(!me.vertices){ me.vertices = []; }
-          // Add current click as next vertex
-          me.vertices.push(e.latlng);
-
-          // Build or update a single continuous polyline
-          if(!me.poly){
-              if(me.vertices.length >= 2){
-                  me.poly = me.renderPolyline(me.vertices, '5 5', me.layer);
-              }
-          } else {
-              me.poly.setLatLngs(me.vertices);
-          }
-
-          // Update cumulative sum across vertices
           me.sum = 0;
-          for(var i=1;i<me.vertices.length;i++){
-              me.sum += me.vertices[i-1].distanceTo(me.vertices[i]) / me.UNIT_CONV;
+
+          if(me.poly){
+              me.latlngsList.push(me.latlngs);
+
+              if(!me.multi){
+                  me.multi = me.renderMultiPolyline(me.latlngsList, '5 5', me.layer, 'dot');
+              } else {
+                  me.multi.setLatLngs(me.latlngsList);
+              }
           }
 
-          // Render a dot label at this vertex with current distance
-          var dis = (me.measure && me.measure.unit === me.SUB_UNIT) ? me.sum * me.SUB_UNIT_CONV : me.sum;
+          var o, dis;
+          for(var l in me.latlngsList){
+              o = me.latlngsList[l];
+              me.sum += o[0].distanceTo(o[1])/me.UNIT_CONV;
+          }
+
+          if(me.measure.unit === this.SUB_UNIT){
+              dis = me.sum * me.SUB_UNIT_CONV;
+          } else {
+              dis = me.sum;
+          }
+
           var s = dis.toFixed(2);
-          me.renderCircle(e.latlng, 0, me.layer, 'dot', parseInt(s) ? (s + ' ' + (me.measure ? me.measure.unit : me.SUB_UNIT)) : '' );
+
+          me.renderCircle(e.latlng, 0, me.layer, 'dot', parseInt(s) ? (s + ' ' + me.measure.unit) : '' );
           me.prevLatlng = e.latlng;
       },
 
@@ -509,27 +511,19 @@
           if(this.prevLatlng){
               var latLng = e.latlng;
 
-              // Preview line: existing vertices plus current mouse
-              var preview = (this.vertices && this.vertices.length) ? this.vertices.slice() : [];
-              if(preview.length === 0){ preview.push(this.prevLatlng); }
-              preview[preview.length] = e.latlng;
+              this.latlngs = [this.prevLatlng, e.latlng];
 
               if(!this.poly){
-                  this.poly = this.renderPolyline(preview, '5 5', this.layer);
+                  this.poly = this.renderPolyline(this.latlngs, '5 5', this.layer);
               } else {
-                  this.poly.setLatLngs(preview);
+                  this.poly.setLatLngs(this.latlngs);
               }
 
               /* Distance in miles/meters */
-              var total = 0;
-              var arr = preview;
-              for(var i=1;i<arr.length;i++){
-                  total += arr[i-1].distanceTo(arr[i]) / this.UNIT_CONV;
-              }
-              this.distance = total;
+              this.distance = parseFloat(this.prevLatlng.distanceTo(e.latlng))/this.UNIT_CONV;
 
               /* scalar and unit */
-              this.measure = this.formatDistance(this.distance, 2);
+              this.measure = this.formatDistance(this.distance + this.sum, 2);
 
               var a = this.prevLatlng ? this._map.latLngToContainerPoint(this.prevLatlng) : null,
                   b = this._map.latLngToContainerPoint(latLng);
@@ -592,8 +586,57 @@
       },
 
       getDblClickHandler: function(e){
+          var azimut = '',
+              me = this;
+
+          if(!this.total){
+              return;
+          }
+
+          this.layer.off('click');
+          this.layer.off('keydown');          
           L.DomEvent.stop(e);
-          this.finish();
+
+          if(this.options.show_azimut){
+            var style = 'color: '+this.options.contrastingColor+';';
+            azimut = ' <span class="azimut azimut-final" style="'+style+'"> &nbsp; '+this.lastAzimut+'&deg;</span>';
+          }
+
+          var workspace = this.layer,
+              label = this.measure.scalar + ' ' + this.measure.unit + ' ',
+              total_scalar = this.measure.unit === this.SUB_UNIT ? this.measure.scalar/this.UNIT_CONV : this.measure.scalar,
+              total_latlng = this.total.getLatLng(),
+              total_label = this.total,
+              html = [
+                  '<div class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label + azimut,
+                  '  <svg class="close" viewbox="0 0 45 35">',
+                  '   <path style="stroke: '+this.options.contrastingColor+'" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
+                  '  </svg>',
+                  '</div>'
+              ].join('');
+
+          this.totalIcon = L.divIcon({ className: 'total-popup', html: html });
+          this.total.setIcon(this.totalIcon);
+
+          var data = {
+              total: this.measure,
+              total_label: total_label,
+              unit: this.UNIT_CONV,
+              sub_unit: this.SUB_UNIT_CONV
+          };
+
+          var fireSelected = function(e){
+              if(L.DomUtil.hasClass(e.originalEvent.target, 'close')){
+                  me.mainLayer.removeLayer(workspace);
+              } else {
+                  workspace.fireEvent('selected', data);
+              }
+          };
+
+          workspace.on('click', fireSelected);
+          workspace.fireEvent('selected', data);
+
+          this.resetRuler(false);
       },
 
       purgeLayers: function(layers){
@@ -644,34 +687,6 @@
 
   L.Control.LinearMeasurement.prototype.isActive = function(){
     return !!this.mainLayer;
-  };
-
-  L.Control.LinearMeasurement.prototype.finish = function(){
-    var azimut = '', me = this;
-    if(!this.total || !this.layer){ return; }
-    if(this.options && this.options.show_azimut){
-      var style = 'color: '+this.options.contrastingColor+';';
-      azimut = ' <span class="azimut azimut-final" style="'+style+'"> &nbsp; '+this.lastAzimut+'&deg;</span>';
-    }
-    var workspace = this.layer,
-        label = this.measure.scalar + ' ' + this.measure.unit + ' ',
-        html = [
-          '<div class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+'">' + label + azimut,
-          '  <svg class="close" viewbox="0 0 45 35">',
-          '   <path style="stroke: '+this.options.contrastingColor+'" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
-          '  </svg>',
-          '</div>'
-        ].join('');
-    this.totalIcon = L.divIcon({ className: 'total-popup', html: html });
-    this.total.setIcon(this.totalIcon);
-    var data = { total: this.measure, total_label: this.total, unit: this.UNIT_CONV, sub_unit: this.SUB_UNIT_CONV };
-    var fireSelected = function(e){
-      if(L.DomUtil.hasClass(e.originalEvent.target, 'close')){ me.mainLayer.removeLayer(workspace); }
-      else { workspace.fireEvent('selected', data); }
-    };
-    workspace.on('click', fireSelected);
-    workspace.fireEvent('selected', data);
-    this.resetRuler(false);
   };
 
 })();
