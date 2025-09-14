@@ -136,33 +136,11 @@ var cost_underground = 12.55,
     };
 
 // Extend the measurement control to hook into completion and show costs
-var Measurement = L.Control.LinearMeasurement.extend({
-  layerSelected: function(e){
-    if(!e || !e.total) return;
-    var distance = e.total.scalar;
-    if(e.total.unit === 'mi'){
-      distance *= e.sub_unit;
-    } else if(e.total.unit === 'km'){
-      distance *= 3280.84;
-    } else if(e.total.unit === 'm'){
-      distance *= 3.28084;
-    }
-    var data = {
-      total_above_ground: numberWithCommas(L.Util.formatNum(cost_above_ground * distance, 2)),
-      total_underground: numberWithCommas(L.Util.formatNum(cost_underground * distance, 2))
-    };
-    // Show popup here (this event only fires on finish/dblclick)
-    var content = L.Util.template(html, data), popup = L.popup().setContent(content);
-    if (e.total_label && e.total_label.bindPopup) {
-      e.total_label.bindPopup(popup, { offset: [45, 0] });
-      e.total_label.openPopup();
-    }
-  }
-});
-
-var measureCtrl = new Measurement({
+var measureCtrl = new L.Control.LinearMeasurement({
   unitSystem: 'imperial',
-  color: '#048abf'
+  color: '#048abf',
+  costAboveGround: cost_above_ground,
+  costUnderground: cost_underground
 });
 map.addControl(measureCtrl);
 // Hide the default control button; we use our own toolbar

@@ -9,7 +9,9 @@
           contrastingColor: '#fff',
           show_last_node: false,
           show_azimut: false,
-          pane: undefined
+          pane: undefined,
+          costAboveGround: 0,
+          costUnderground: 0
       },
 
       clickSpeed: 200,
@@ -616,6 +618,72 @@
 
   L.Control.LinearMeasurement.prototype.isActive = function(){
     return !!this.mainLayer;
+  };
+
+  L.Control.LinearMeasurement.prototype.finish = function(){
+    var me = this;
+    if(!this.layer){ return; }
+
+    // Build segments array from latlngsList
+    var segments = [];
+    if(this.latlngsList && this.latlngsList.length){
+      for(var i=0;i<this.latlngsList.length;i++){
+        var seg = this.latlngsList[i];
+        if(seg && seg.length === 2){
+          segments.push([seg[0], seg[1]]);
+        }
+      }
+    }
+
+    if(segments.length === 0){ return; }
+
+    var feetPerMeter = 3.28084;
+    var totalFeet = 0;
+    var totalCostAbove = 0;
+    var totalCostUnder = 0;
+    var lines = [];
+
+    function fmt(n){ return (Math.round(n * 100) / 100).toLocaleString(); }
+
+    for(var j=0;j<segments.length;j++){
+      var a = segments[j][0], b = segments[j][1];
+      var meters = a.distanceTo(b);
+      var feet = meters * feetPerMeter;
+      var costA = feet * (me.options.costAboveGround || 0);
+      var costU = feet * (me.options.costUnderground || 0);
+      totalFeet += feet;
+      totalCostAbove += costA;
+      totalCostUnder += costU;
+      lines.push('<li>Segment '+(j+1)+': '+fmt(feet)+' ft — Above: $'+fmt(costA)+' | Underground: $'+fmt(costU)+'</li>');
+    }
+
+    var summary = [
+      '<div class="total-popup-content" style="background-color:'+this.options.color+'; color: '+this.options.contrastingColor+';">',
+      '  <div style="font-weight:bold; margin-bottom:6px;">measurement/cost summary</div>',
+      '  <div>Total Length: '+fmt(totalFeet)+' ft</div>',
+      '  <div>Total Cost (Above): $'+fmt(totalCostAbove)+'</div>',
+      '  <div>Total Cost (Underground): $'+fmt(totalCostUnder)+'</div>',
+      '</div>',
+      '<div style="background:#fff; color:#333; padding:8px 10px; border-radius:6px; margin-top:6px; max-height:220px; overflow:auto;">',
+      '  <ul style="margin:0; padding-left:18px;">'+lines.join('')+'</ul>',
+      '</div>'
+    ].join('');
+
+    // Place popup at last point
+    var lastPair = segments[segments.length-1];
+    var at = lastPair[1];
+    var icon = L.divIcon({ className: 'total-popup', html: summary });
+    if(this.total){
+      this.total.setLatLng(at);
+      this.total.setIcon(icon);
+    } else {
+      this.total = L.marker(at, { icon: icon, clickable: true }).addTo(this.layer);
+    }
+
+    // Finalize and fire selected for external hooks
+    var data = { total: { scalar: totalFeet, unit: 'ft' }, total_label: this.total, unit: this.UNIT_CONV, sub_unit: this.SUB_UNIT_CONV };
+    this.layer.fireEvent('selected', data);
+    this.resetRuler(false);
   };
 
 })();
