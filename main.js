@@ -20,6 +20,15 @@ var s2cloudless = L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-
     attribution: 'Imagery: Sentinel-2 cloudless by EOX IT Services GmbH'
 });
 
+// DC GIS ArcGIS MapServer tiles (Web Mercator)
+var dcBasemap = L.tileLayer('https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/DC_Basemap_WebMercator/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Basemap: DC GIS'
+});
+
+var dcAerial = L.tileLayer('https://maps2.dcgis.dc.gov/dcgis/rest/services/DCGIS_DATA/DC_Aerial_Photo_WebMercator/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Aerial: DC GIS'
+});
+
 // Add default layer
 osmStandard.addTo(map);
 
@@ -57,6 +66,10 @@ toolbar.onAdd = function() {
   var clearBtn = L.DomUtil.create('button', 'map-btn', div);
   clearBtn.type = 'button';
   clearBtn.innerHTML = 'Clear';
+  // Print report button (replaces former Finish)
+  var printBtn = L.DomUtil.create('button', 'map-btn', div);
+  printBtn.type = 'button';
+  printBtn.innerHTML = 'Print';
   // Finish button
   var finishBtn = L.DomUtil.create('button', 'map-btn', div);
   finishBtn.type = 'button';
@@ -67,7 +80,9 @@ toolbar.onAdd = function() {
     { label: 'OSM Standard', value: 'standard' },
     { label: 'OSM HOT', value: 'hot' },
     { label: 'USGS Imagery', value: 'usgs' },
-    { label: 'Sentinel-2 Cloudless', value: 's2' }
+    { label: 'Sentinel-2 Cloudless', value: 's2' },
+    { label: 'DC Basemap (Web Mercator)', value: 'dcbase' },
+    { label: 'DC Aerial Photo (Web Mercator)', value: 'dcaerial' }
   ];
   options.forEach(function(opt){
     var o = document.createElement('option');
@@ -103,6 +118,48 @@ toolbar.onAdd = function() {
       if (measureCtrl && measureCtrl.clear) { measureCtrl.clear(); }
     } catch (e) { /* no-op */ }
   });
+  L.DomEvent.on(printBtn, 'click', function(){
+    try {
+      if (!measureCtrl || !measureCtrl.latlngsList || !measureCtrl.latlngsList.length) return;
+      var segments = measureCtrl.latlngsList;
+      var fmt = function(n){ return (Math.round(n * 100) / 100).toLocaleString(); };
+      var totalMeters = 0, totalAbove = 0, totalUnder = 0; var lines = [];
+      var minLat=90, maxLat=-90, minLng=180, maxLng=-180; var coords=[];
+      for (var i=0;i<segments.length;i++){
+        var a=segments[i][0], b=segments[i][1];
+        var meters = a.distanceTo(b);
+        var cA = meters * (measureCtrl.options.costAboveGround || 0);
+        var cU = meters * (measureCtrl.options.costUnderground || 0);
+        totalMeters += meters; totalAbove += cA; totalUnder += cU;
+        lines.push('<li>Segment '+(i+1)+': '+fmt(meters)+' m — Above: $'+fmt(cA)+' | Underground: $'+fmt(cU)+'</li>');
+        coords.push([a.lat,a.lng]); coords.push([b.lat,b.lng]);
+        [a,b].forEach(function(ll){ if(ll.lat<minLat)minLat=ll.lat; if(ll.lat>maxLat)maxLat=ll.lat; if(ll.lng<minLng)minLng=ll.lng; if(ll.lng>maxLng)maxLng=ll.lng; });
+      }
+      var w = window.open('', '_blank');
+      var branding = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">'+
+        '<img src="https://newlighttechnologies.com/hubfs/nlt-square.png" alt="NLT" style="height:36px;"/>'+
+        '<div><div style="font-size:18px;font-weight:600;">Measurement Report (Demo)</div>'+
+        '<div style="color:#666;font-size:12px;">This is for demo purposes only and not an actual cost analysis worksheet for your project. '+
+        'Contact us at <a href="https://newlighttechnologies.com" target="_blank">NewLightTechnologies.com</a> or see '+
+        '<a href="https://newlighttechnologies.com/solutions#analytics-insights" target="_blank">UtilityLine capabilities</a>.</div></div></div>';
+      var doc = [
+        '<!doctype html><html><head><meta charset="utf-8"/>',
+        '<title>Measurement Report</title>',
+        '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />',
+        '<style>body{font-family:Arial,Helvetica,sans-serif;padding:16px;} #map{height:420px;margin:10px 0;border:1px solid #ddd;border-radius:6px;} .card{border:1px solid #ddd;border-radius:6px;padding:10px;} .muted{color:#666}</style>',
+        '</head><body>',branding,
+        '<div class="muted">Total Length: '+fmt(totalMeters)+' m — Above: $'+fmt(totalAbove)+' — Underground: $'+fmt(totalUnder)+'</div>',
+        '<div id="map"></div>',
+        '<div class="card"><strong>Segments</strong><ul>'+lines.join('')+'</ul></div>',
+        '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>',
+        '<script>(function(){\n var map=L.map("map").setView(['+((minLat+maxLat)/2).toFixed(6)+','+((minLng+maxLng)/2).toFixed(6)+'], 12);\n'+
+        'L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);\n var latlngs='+JSON.stringify(coords)+';\n'+
+        'var poly=L.polyline(latlngs,{color:"#048abf"}).addTo(map);\n map.fitBounds(poly.getBounds(),{padding:[20,20]});\n setTimeout(function(){window.print();},600);\n})();</script>',
+        '</body></html>'
+      ].join('');
+      w.document.open(); w.document.write(doc); w.document.close();
+    } catch(e){}
+  });
   L.DomEvent.on(finishBtn, 'click', function(){
     try { if (!measureCtrl) return; measureCtrl.finish(); } catch(e){}
   });
@@ -115,6 +172,8 @@ toolbar.onAdd = function() {
     if (select.value === 'hot') currentBase = osmHOT;
     else if (select.value === 'usgs') currentBase = usgsImagery;
     else if (select.value === 's2') currentBase = s2cloudless;
+    else if (select.value === 'dcbase') currentBase = dcBasemap;
+    else if (select.value === 'dcaerial') currentBase = dcAerial;
     else currentBase = osmStandard;
     currentBase.addTo(map);
   });
