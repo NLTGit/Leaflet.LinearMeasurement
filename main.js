@@ -218,3 +218,28 @@ var beltwayBounds = L.latLngBounds(
   [38.70, -76.75]  // SE of beltway
 );
 map.fitBounds(beltwayBounds, { padding: [10, 10] });
+
+// Minimal accordion/toggle behavior for the Project Info section
+(function initializeProjectInfo() {
+  var container = document.getElementById('project-info');
+  if (!container) return;
+
+  var cards = container.querySelectorAll('.card');
+  Array.prototype.forEach.call(cards, function(card) {
+    var headerButton = card.querySelector('.card-header');
+    var content = card.querySelector('.card-content');
+    if (!headerButton || !content) return;
+
+    headerButton.addEventListener('click', function() {
+      var expanded = headerButton.getAttribute('aria-expanded') === 'true';
+      headerButton.setAttribute('aria-expanded', (!expanded).toString());
+    });
+  });
+
+  // Update source count badge based on list length
+  var countBadge = container.querySelector('.sources-count');
+  var sources = container.querySelectorAll('#info-sources .source-list li');
+  if (countBadge) {
+    countBadge.textContent = (sources ? sources.length : 0) + ' data sources';
+  }
+})();
