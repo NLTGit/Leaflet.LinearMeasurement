@@ -1,6 +1,6 @@
 # NLT AOI Tool
 
-Standalone Area of Interest (AOI) microservice for IMPACT. Deployed to AWS Lambda via Serverless Framework. Exposes a single POST `/aoi` endpoint that accepts GeoJSON and a list of operations.
+Standalone Area of Interest (AOI) microservice for IMPACT. Deploys to AWS Lambda via Serverless Framework. Exposes a single POST `/aoi` endpoint that accepts GeoJSON and a list of operations.
 
 ## API
 
@@ -43,10 +43,14 @@ Response:
 - Deploy: `npm run deploy -- --stage dev`
 - Remove: `npm run remove -- --stage dev`
 
+Environment variables:
+- `AWS_ROLE_TO_ASSUME` (GitHub secret, for deploy workflow)
+- `PROJECT_URL` and `PROJECT_TOKEN` (GitHub secrets, for project automation)
+
 ## CI/CD
 
-This repo includes GitHub Actions to run tests and lint on PRs, and optionally deploy on merge to `main` if AWS credentials are added as secrets.
+This repo includes GitHub Actions to run tests and lint on PRs, and deploy on merge to `main` when `AWS_ROLE_TO_ASSUME` is configured.
 
 ## Project Kanban
 
-Create a GitHub Project (Beta) and enable auto-add for new issues/PRs. Use labels `bug` and `enhancement` from issue templates.
+Create a GitHub Project (Beta) and enable auto-add for new issues/PRs. Use labels `bug` and `enhancement` from issue templates. If using the `Project Automation` workflow, set `PROJECT_URL` and `PROJECT_TOKEN` secrets.
