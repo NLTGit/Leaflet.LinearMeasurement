@@ -27,7 +27,7 @@ h1 {
   text-align: left;
 }
 
-/* Project Info section */
+/* Project Info section - mirrored from examples */
 :root {
   --surface: #ffffff;
   --panel: #f8f9fb;
@@ -40,11 +40,12 @@ h1 {
 }
 
 #project-info {
-  margin-top: 24px;
+  margin: 24px 16px 16px;
   padding: 16px;
   background: var(--panel);
   border-top: 1px solid var(--border);
   color: var(--text);
+  border-radius: 10px;
 }
 
 #project-info h2 {
@@ -235,4 +236,177 @@ h1 {
     background: #111827;
     border-color: #1f2937;
   }
+}
+
+/* NLT theme and layout */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #073763; /* NLT dark blue */
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.75em;
+  color: #ffffff;
+  text-align: left;
+}
+
+.nlt-logo {
+  height: 1.75em; /* match header text size */
+  width: auto;
+}
+
+.site-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-card {
+  background: #f7f9fc;
+  border: 1px solid #e2e8f0;
+  border-top: 4px solid #048abf; /* NLT primary blue */
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.footer-heading {
+  margin: 0 0 8px 0;
+  font-size: 1.1em;
+  color: #073763;
+}
+
+.datasources {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.datasources li {
+  margin: 6px 0;
+}
+
+.datasources a {
+  color: #048abf;
+  text-decoration: none;
+}
+
+.datasources a:hover {
+  text-decoration: underline;
+}
+
+.made-by {
+  text-align: right;
+}
+
+/* Terminal-style status box */
+.terminal {
+  background: #0b1220;
+  color: #c8facc;
+  border: 1px solid #1f2a3a;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.terminal .muted { color: #7aa2b2; }
+.terminal-list { margin: 6px 0 0 16px; padding: 0; }
+.terminal-list li { margin: 4px 0; }
+
+/* Segment label on line midpoint */
+.seg-label {
+  background: rgba(255,255,255,0.9);
+  color: #073763;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+/* Popup window controls */
+.popup-window { position: relative; }
+.popup-header { display:flex; align-items:center; justify-content:space-between; font-weight:bold; margin-bottom:6px; }
+.popup-controls { display:flex; gap:6px; }
+.popup-btn { background: rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.4); border-radius:4px; padding:0 6px; cursor:pointer; font-size:12px; }
+.popup-btn:hover { background: rgba(255,255,255,0.3); }
+
+/* Layout container and gradient bar */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.gradient-bar {
+  height: 8px;
+  background: linear-gradient(90deg, #048abf 0%, #073763 100%);
+  border-radius: 0 0 8px 8px;
+  margin: 0 0 12px 0;
+}
+
+/* Map container tweaks */
+#map {
+  height: 70vh;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* Grouped control corner and measurement highlight */
+.leaflet-control.leaflet-bar .icon-active {
+  background-color: #048abf !important;
+}
+
+/* Custom horizontal toolbar (top-right) */
+.map-toolbar.leaflet-control {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.map-btn {
+  background: #f7f9fc;
+  border: 1px solid #e2e8f0;
+  color: #073763;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.map-btn:hover { background: #eef4fa; }
+.map-btn.active { background: #048abf; color: #fff; border-color: #048abf; }
+
+.map-toolbar select {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #073763;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  body { padding: 24px; }
+  #map { height: 60vh; }
+  .header { flex-direction: row; }
 }
