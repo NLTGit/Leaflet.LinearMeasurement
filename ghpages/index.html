@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Leaflet.LinearMeasurement</title>
+    <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="src/Leaflet.LinearMeasurement.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	</head>
+	<body>
+	    <div class="container">
+	      <div class="header">
+	        <h1>DEMO: Leaflet Linear Measurement Plugin</h1>
+	        <a href="https://NewLightTechnologies.com" target="_blank" rel="noopener noreferrer">
+	          <img class="nlt-logo" src="https://newlighttechnologies.com/hubfs/nlt-square.png" alt="New Light Technologies" />
+	        </a>
+	      </div>
+	      <div class="gradient-bar"></div>
+	    </div>
+		<div class="container">
+		  <div id="map"></div>
+		</div>
+		<script type="text/javascript" src="src/Leaflet.LinearMeasurement.js"></script>
+		<script src="main.js?v=25" ></script>
+	    <section id="project-info" aria-labelledby="project-info-title">
+	      <h2 id="project-info-title">Project Info</h2>
+	      <div class="info-summary">
+	        <span class="badge status operational" aria-label="Status: Operational">Operational</span>
+	        <span class="badge version">v0.0.1</span>
+	        <span class="badge sources-count">0 data sources</span>
+	        <span class="meta last-updated">Updated just now</span>
+	      </div>
+	      <div class="info-grid" data-accordion="true">
+	        <article class="card">
+	          <button class="card-header" aria-expanded="true" aria-controls="info-sources">
+	            <h3>Data Sources</h3>
+	            <span class="chevron" aria-hidden="true"></span>
+	          </button>
+	          <div id="info-sources" class="card-content">
+	            <ul class="source-list">
+	              <li>
+	                <span class="source-name">OpenStreetMap</span>
+	                <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">Link</a>
+	                <span class="pill license">ODbL</span>
+	                <span class="pill category">Basemap</span>
+	              </li>
+	              <li>
+	                <span class="source-name">Leaflet</span>
+	                <a href="https://leafletjs.com" target="_blank" rel="noopener">Link</a>
+	                <span class="pill license">BSD-2</span>
+	                <span class="pill category">Library</span>
+	              </li>
+	              <li>
+	                <span class="source-name">Leaflet.LinearMeasurement</span>
+	                <a href="https://github.com/NLTGit/Leaflet.LinearMeasurement" target="_blank" rel="noopener">GitHub</a>
+	                <span class="pill license">MIT</span>
+	                <span class="pill category">Plugin</span>
+	              </li>
+	            </ul>
+	          </div>
+	        </article>
+	        <article class="card">
+	          <button class="card-header" aria-expanded="true" aria-controls="info-status">
+	            <h3>Application Status</h3>
+	            <span class="chevron" aria-hidden="true"></span>
+	          </button>
+	          <div id="info-status" class="card-content">
+	            <div class="status-row">
+	              <span class="status-dot healthy" aria-hidden="true"></span>
+	              <span class="status-text">Operational</span>
+	              <span class="meta">Leaflet 1.x, Plugin v0.0.1</span>
+	            </div>
+	            <div class="kv">
+	              <div><span class="label">Last deploy</span><span class="value">—</span></div>
+	              <div><span class="label">Last incident</span><span class="value">None</span></div>
+	            </div>
+	            <div class="actions">
+	              <a class="link" href="https://github.com/NLTGit/Leaflet.LinearMeasurement/issues/new" target="_blank" rel="noopener">Report an issue</a>
+	            </div>
+	          </div>
+	        </article>
+	        <article class="card">
+	          <button class="card-header" aria-expanded="true" aria-controls="info-about">
+	            <h3>About This Project</h3>
+	            <span class="chevron" aria-hidden="true"></span>
+	          </button>
+	          <div id="info-about" class="card-content">
+	            <p>Leaflet plugin that adds linear measurement tools with interval markers and a total distance tooltip, supporting multi-segment paths.</p>
+	            <ul class="feature-list">
+	              <li>Imperial and metric units</li>
+	              <li>Optional azimuth display</li>
+	              <li>Keyboard and double-click interactions</li>
+	            </ul>
+	            <div class="meta-row">
+	              <a class="link" href="https://NLTGit.github.io/Leaflet.LinearMeasurement/" target="_blank" rel="noopener">Live demo</a>
+	              <a class="link" href="https://github.com/NLTGit/Leaflet.LinearMeasurement" target="_blank" rel="noopener">GitHub</a>
+	              <a class="link" href="https://newlighttechnologies.com/about/contact/" target="_blank" rel="noopener">Contact</a>
+	            </div>
+	          </div>
+	        </article>
+	      </div>
+	    </section>
+	</body>
+</html>
