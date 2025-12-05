@@ -22,6 +22,13 @@ See the <a href="https://NLTGit.github.io/Leaflet.LinearMeasurement/">demo</a>.
   <img src="examples/dc.png" />
 </div>
 
+<h2>Local testing</h2>
+<ol>
+  <li>Install dependencies: <code>npm install</code></li>
+  <li>Start the local demo: <code>npm run dev</code> (serves <code>./ghpages</code> on <code>http://localhost:8080</code>)</li>
+  <li>Open <code>http://localhost:8080</code> in a browser to test</li>
+</ol>
+
 <h2>Usage</h2>
 
 <div>

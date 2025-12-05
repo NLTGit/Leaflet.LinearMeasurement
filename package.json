@@ -1,13 +1,17 @@
 {
   "name": "leaflet-linear-measurement",
   "version": "0.0.1",
+  "scripts": {
+    "dev": "http-server ./ghpages -p 8080"
+  },
   "dependencies": {
     "gulp": "^3.9.0",
     "gulp-clean": "^0.3.1",
     "gulp-uglify": "^1.2.0"
   },
   "devDependencies": {
-    "gulp-sass": "^2.3.2"
+    "gulp-sass": "^2.3.2",
+    "http-server": "^14.1.1"
   },
   "main": "src/Leaflet.LinearMeasurement.js",
   "style": "sass/leaflet.scss"
