@@ -1,4 +1,7 @@
-dist/
-node_modules/
+node_modules
+dist
+.serverless
+coverage
+.env
 .DS_Store
-.vscode
+npm-debug.log*
