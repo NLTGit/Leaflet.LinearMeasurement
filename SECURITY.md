@@ -1,38 +1,29 @@
 # Security Policy
 
+New Light Technologies, Inc. (NLT) is committed to the security and integrity of the open-source software we publish. We welcome reports from the community and appreciate the time and effort taken to disclose potential issues responsibly.
+
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| Latest (master) | ✅ Yes |
-| Older releases | ❌ No |
+We recommend always using the latest released version of this project. Security updates are applied to the most recent release; older versions are not maintained.
 
 ## Reporting a Vulnerability
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+Please report security vulnerabilities privately using GitHub's private vulnerability reporting. Open the **Security** tab of this repository and select **Report a vulnerability** to send a confidential report directly to our team.
 
-Use one of the following channels:
+Please do not report security issues through public issues, pull requests, or discussions.
 
-- **GitHub Private Vulnerability Reporting** (preferred): [Report a vulnerability](https://github.com/NLTGit/Leaflet.LinearMeasurement/security/advisories/new)
-- **Email**: security@newlighttechnologies.com
+For general questions or support requests, visit us at [newlighttechnologies.com](https://www.newlighttechnologies.com) or use our [contact page](https://www.newlighttechnologies.com/contact).
 
-### What to include
+## What to Expect
 
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Any suggested fix (optional)
+- We will acknowledge your report within five business days.
+- We will keep you informed as we investigate and work toward a resolution.
+- Once the issue is resolved, we will coordinate with you on appropriate disclosure.
 
-### Response Timeline
+## Disclaimer
 
-- **Acknowledgement**: within 48 hours
-- **Assessment & timeline**: within 7 days
-- **Fix or mitigation**: based on severity — critical within 14 days, high within 30 days
-
-## Scope
-
-This policy applies to the `NLTGit/Leaflet.LinearMeasurement` repository and the published npm package.
+This project is provided as open-source software under the MIT License. It is made available on an "as is" basis, without warranties or conditions of any kind, express or implied, and without any guarantee of security, fitness for a particular purpose, or ongoing maintenance. Use of this software is at your own risk. Nothing in this policy creates a contractual obligation or service-level commitment on the part of New Light Technologies, Inc.
 
 ---
 
-*Maintained by [New Light Technologies, Inc.](https://newlighttechnologies.com)*
+Thank you for helping keep New Light Technologies projects and their users secure.
